@@ -364,13 +364,15 @@ func (c *UserController) TerminateSession(userID int64, token string) error {
 
 func emailOTT(to string, ott string, purpose string) error {
 	var templateName string
+	fromEmail := viper.GetString("smtp.from.email")
+	fromName := viper.GetString("smtp.from.name")
 	if purpose == ente.ChangeEmailOTTPurpose {
 		templateName = ente.ChangeEmailOTTTemplate
 	} else {
 		templateName = ente.OTTTemplate
 	}
 	subject := fmt.Sprintf("Verification code: %s", ott)
-	err := emailUtil.SendTemplatedEmail([]string{to}, "Ente", "verify@ente.io",
+	err := emailUtil.SendTemplatedEmail([]string{to}, fromName, fromEmail,
 		subject, templateName, map[string]interface{}{
 			"VerificationCode": ott,
 		}, nil)
