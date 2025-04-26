@@ -2,6 +2,7 @@ package s3config
 
 import (
 	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -100,10 +101,11 @@ func NewS3Config() *S3Config {
 }
 
 func (config *S3Config) initialize() {
-	dcs := [8]string{
-		dcB2EuropeCentral, dcSCWEuropeFranceLockedDeprecated, dcWasabiEuropeCentralDeprecated,
-		dcWasabiEuropeCentral_v3, dcSCWEuropeFrance_v3, dcWasabiEuropeCentralDerived, bucket5, bucket6}
-
+	// dcs := [8]string{
+	// 	dcB2EuropeCentral, dcSCWEuropeFranceLockedDeprecated, dcWasabiEuropeCentralDeprecated,
+	// 	dcWasabiEuropeCentral_v3, dcSCWEuropeFrance_v3, dcWasabiEuropeCentralDerived, bucket5, bucket6}
+	dcs := [2]string{
+		dcB2EuropeCentral, dcWasabiEuropeCentralDeprecated}
 	config.hotDC = dcB2EuropeCentral
 	config.secondaryHotDC = dcWasabiEuropeCentral_v3
 	hs1 := viper.GetString("s3.hot_storage.primary")
@@ -127,8 +129,13 @@ func (config *S3Config) initialize() {
 	usePathStyleURLs := viper.GetBool("s3.use_path_style_urls")
 	areLocalBuckets := viper.GetBool("s3.are_local_buckets")
 	config.areLocalBuckets = areLocalBuckets
-
+	log.Infof("XXXXXXXXXX hotDC %s", config.hotDC)
+	log.Infof("XXXXXXXXXX secondaryHotDC %s", config.secondaryHotDC)
 	for _, dc := range dcs {
+		log.Infof("ZXXXXXXXXXXXXXXXX configuring Bucket %s", dc)
+		log.Infof("Credentials %s %s", viper.GetString("s3."+dc+".key"), viper.GetString("s3."+dc+".secret"))
+		log.Infof("Endpoint %s", viper.GetString("s3."+dc+".endpoint"))
+		log.Infof("Region %s", viper.GetString("s3."+dc+".region"))
 		config.buckets[dc] = viper.GetString("s3." + dc + ".bucket")
 		s3Config := aws.Config{
 			Credentials: credentials.NewStaticCredentials(viper.GetString("s3."+dc+".key"),
