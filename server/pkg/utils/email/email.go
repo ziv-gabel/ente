@@ -10,8 +10,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"net/http"
 	"net/smtp"
+	"net/url"
 	"path"
 	"strings"
 
@@ -28,11 +30,20 @@ var knownInvalidEmailErrors = []string{
 
 // Send sends an email
 func Send(toEmails []string, fromName string, fromEmail string, subject string, htmlBody string, inlineImages []map[string]interface{}) error {
-	smtpHost := viper.GetString("smtp.host")
-	if smtpHost != "" {
-		return sendViaSMTP(toEmails, fromName, fromEmail, subject, htmlBody, inlineImages)
+	azureClientId := viper.GetString("azure.client.id")
+	if azureClientId != "" {
+		log.Infof("Sending using azure from email: %s", fromEmail)
+		res := SendViaAzure(toEmails, fromName, fromEmail, subject, htmlBody, inlineImages)
+		log.Infof("result from SendViaAzure %s", res)
+		return res
 	} else {
-		return sendViaTransmail(toEmails, fromName, fromEmail, subject, htmlBody, inlineImages)
+		log.Infof("SMTP config %s", viper.GetStringMap("smtp"))
+		smtpHost := viper.GetString("smtp.host")
+		if smtpHost != "" {
+			return sendViaSMTP(toEmails, fromName, fromEmail, subject, htmlBody, inlineImages)
+		} else {
+			return sendViaTransmail(toEmails, fromName, fromEmail, subject, htmlBody, inlineImages)
+		}
 	}
 }
 
@@ -233,4 +244,114 @@ func getMailBodyWithBase(baseTemplateName, templateName string, templateData map
 	}
 
 	return htmlBody.String(), nil
+}
+func SendViaAzure(toEmails []string, fromName string, fromEmail string, subject string, htmlBody string, inlineImages []map[string]interface{}) error {
+	// Get an access token
+	token, err := getAccessToken()
+	if err != nil {
+		return stacktrace.Propagate(err, "")
+	}
+
+	// Build the 'toRecipients' array
+	var toRecipients []map[string]interface{}
+	for _, toEmail := range toEmails {
+		toRecipients = append(toRecipients, map[string]interface{}{
+			"emailAddress": map[string]string{
+				"address": toEmail,
+			},
+		})
+	}
+
+	// Build the email message
+	emailMessage := map[string]interface{}{
+		"message": map[string]interface{}{
+			"subject": subject,
+			"body": map[string]string{
+				"contentType": "HTML",
+				"content":     htmlBody,
+			},
+			"toRecipients": toRecipients,
+		},
+		"saveToSentItems": true,
+	}
+
+	// Only add attachments if inlineImages is not nil and not empty
+	if inlineImages != nil && len(inlineImages) > 0 {
+		var attachments []map[string]interface{}
+		for _, img := range inlineImages {
+			attachments = append(attachments, img)
+		}
+		emailMessage["message"].(map[string]interface{})["attachments"] = attachments
+	}
+
+	// Serialize the payload
+	jsonData, err := json.Marshal(emailMessage)
+	if err != nil {
+		return stacktrace.Propagate(err, "")
+	}
+
+	// Send the email using Microsoft Graph API
+	url := fmt.Sprintf("https://graph.microsoft.com/v1.0/users/%s/sendMail", fromEmail)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return stacktrace.Propagate(err, "")
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Errorf("Error sending mail %s", err)
+		return stacktrace.Propagate(err, "")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		return stacktrace.Propagate(err, "")
+	}
+
+	return nil
+}
+
+func getAccessToken() (string, error) {
+	azureClientId := viper.GetString("azure.client.id")
+	azureClientSecret := viper.GetString("azure.client.secret")
+	azureTenantId := viper.GetString("azure.tenant.id")
+	tokenURL := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", azureTenantId)
+	data := url.Values{}
+	data.Set("client_id", azureClientId)
+	data.Set("scope", "https://graph.microsoft.com/.default")
+	data.Set("client_secret", azureClientSecret)
+	data.Set("grant_type", "client_credentials")
+
+	req, err := http.NewRequest("POST", tokenURL, bytes.NewBufferString(data.Encode()))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		return "", fmt.Errorf("token request failed: %s", string(bodyBytes))
+	}
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+
+	token, ok := result["access_token"].(string)
+	if !ok {
+		return "", fmt.Errorf("no access token in response")
+	}
+
+	return token, nil
 }
