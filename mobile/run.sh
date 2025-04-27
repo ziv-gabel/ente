@@ -1,6 +1,6 @@
 #!/bin/sh
 
-FLUTTER_RUN="flutter run --flavor dev "
+FLUTTER_RUN="flutter build apk --release --flavor independent "
 
 SUPPLIED_ENV_FILE=".env"
 while IFS= read -r line
@@ -10,4 +10,4 @@ do
 done < "$SUPPLIED_ENV_FILE"
 
 echo "Running: $FLUTTER_RUN"
-$FLUTTER_RUN
+#$FLUTTER_RUN
