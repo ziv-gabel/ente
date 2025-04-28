@@ -2,13 +2,14 @@ package api
 
 import (
 	"context"
-	"github.com/go-resty/resty/v2"
 	"log"
 	"time"
+
+	"github.com/go-resty/resty/v2"
 )
 
 const (
-	EnteAPIEndpoint = "https://api.ente.io"
+	EnteAPIEndpoint = "https://enteapi.unplugged-systems.com"
 	TokenHeader     = "X-Auth-Token"
 	TokenQuery      = "token"
 	ClientPkgHeader = "X-Client-Package"

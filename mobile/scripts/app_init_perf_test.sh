@@ -10,7 +10,7 @@
 # app will start from home page. --keep-app-running is for starting the 
 # app from home page instead of logging in on every run.
 
-export ENDPOINT="https://api.ente.io"
+export ENDPOINT=${1:-https://api.ente.io}
 
 flutter drive \
   --driver=test_driver/perf_driver.dart \
