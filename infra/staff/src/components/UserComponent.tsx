@@ -13,13 +13,23 @@ import TableContainer from "@mui/material/TableContainer";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import * as React from "react";
-import type { UserComponentProps } from "../types";
 import ChangeEmail from "./ChangeEmail";
 import DeleteAccount from "./DeleteAccont";
 import Disable2FA from "./Disable2FA";
 import DisablePasskeys from "./DisablePasskeys";
 import ToggleEmailMFA from "./ToggleEmailMFA";
 import UpdateSubscription from "./UpdateSubscription";
+
+export interface UserData {
+    User: Record<string, string>;
+    Storage: Record<string, string>;
+    Subscription: Record<string, string>;
+    Security: Record<string, string>;
+}
+
+interface UserComponentProps {
+    userData: UserData | null;
+}
 
 const UserComponent: React.FC<UserComponentProps> = ({ userData }) => {
     const [deleteAccountOpen, setDeleteAccountOpen] = React.useState(false);
@@ -34,10 +44,10 @@ const UserComponent: React.FC<UserComponentProps> = ({ userData }) => {
     const [disablePasskeysOpen, setDisablePasskeysOpen] = React.useState(false);
 
     React.useEffect(() => {
-        setTwoFactorEnabled(userData?.security["Two factor 2FA"] === "Enabled");
-        setEmail2FAEnabled(userData?.security["Email MFA"] === "Enabled");
+        setTwoFactorEnabled(userData?.Security["Two factor 2FA"] === "Enabled");
+        setEmail2FAEnabled(userData?.Security["Email MFA"] === "Enabled");
         setCanDisableEmailMFA(
-            userData?.security["Can Disable EmailMFA"] === "Yes",
+            userData?.Security["Can Disable EmailMFA"] === "Yes",
         );
     }, [userData]);
 
@@ -138,10 +148,14 @@ const DataTable: React.FC<DataTableProps> = ({
             minHeight: 300,
             display: "flex",
             flexDirection: "column",
+            marginBottom: "20px",
             height: "100%",
             width: "100%",
-            padding: "10px",
+            padding: "13px",
             overflowX: "hidden",
+            "&:not(:last-child)": {
+                marginBottom: "40px",
+            },
         }}
     >
         <Box
@@ -162,9 +176,9 @@ const DataTable: React.FC<DataTableProps> = ({
                     width: "100%",
                 }}
             >
-                {title.charAt(0).toUpperCase() + title.slice(1)}
+                {title}
             </Typography>
-            {title === "user" && (
+            {title === "User" && (
                 <IconButton
                     edge="start"
                     aria-label="delete"
@@ -173,7 +187,7 @@ const DataTable: React.FC<DataTableProps> = ({
                     <DeleteIcon style={{ color: "" }} />
                 </IconButton>
             )}
-            {title === "subscription" && (
+            {title === "Subscription" && (
                 <IconButton
                     edge="end"
                     aria-label="edit"

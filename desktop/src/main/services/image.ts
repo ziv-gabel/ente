@@ -6,7 +6,7 @@ import { type ZipItem } from "../../types/ipc";
 import { execAsync, isDev } from "../utils/electron";
 import {
     deleteTempFileIgnoringErrors,
-    makeFileForStreamOrPathOrZipItem,
+    makeFileForDataOrPathOrZipItem,
     makeTempFilePath,
 } from "../utils/temp";
 
@@ -61,7 +61,7 @@ const vipsPath = () =>
     );
 
 export const generateImageThumbnail = async (
-    pathOrZipItem: string | ZipItem,
+    dataOrPathOrZipItem: Uint8Array | string | ZipItem,
     maxDimension: number,
     maxSize: number,
 ): Promise<Uint8Array> => {
@@ -69,7 +69,7 @@ export const generateImageThumbnail = async (
         path: inputFilePath,
         isFileTemporary: isInputFileTemporary,
         writeToTemporaryFile: writeToTemporaryInputFile,
-    } = await makeFileForStreamOrPathOrZipItem(pathOrZipItem);
+    } = await makeFileForDataOrPathOrZipItem(dataOrPathOrZipItem);
 
     const outputFilePath = await makeTempFilePath("jpeg");
 

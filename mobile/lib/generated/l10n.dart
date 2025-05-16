@@ -2892,7 +2892,7 @@ class S {
     );
   }
 
-  /// `{count, plural, =0{no memories} one{{formattedCount} memory} other{{formattedCount} memories}}`
+  /// `{count, plural, zero{no memories} one{{formattedCount} memory} other{{formattedCount} memories}}`
   String memoryCount(int count, String formattedCount) {
     return Intl.plural(
       count,
@@ -5197,16 +5197,6 @@ class S {
     );
   }
 
-  /// `Sorry, we could not backup this file right now, we will retry later.`
-  String get sorryBackupFailedDesc {
-    return Intl.message(
-      'Sorry, we could not backup this file right now, we will retry later.',
-      name: 'sorryBackupFailedDesc',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `We could not backup your data.\nWe will retry later.`
   String get couldNotBackUpTryLater {
     return Intl.message(
@@ -5658,7 +5648,7 @@ class S {
     );
   }
 
-  /// `{count, plural, =1 {Move item} other {Move items}}`
+  /// `{count, plural, one {Move item} other {Move items}}`
   String moveItem(num count) {
     return Intl.plural(
       count,
@@ -5670,7 +5660,7 @@ class S {
     );
   }
 
-  /// `{count, plural, =1 {Add item} other {Add items}}`
+  /// `{count, plural, one {Add item} other {Add items}}`
   String addItem(num count) {
     return Intl.plural(
       count,
@@ -6536,7 +6526,7 @@ class S {
     );
   }
 
-  /// `{count, plural, =1 {It can be deleted from the device to free up {formattedSize}} other {They can be deleted from the device to free up {formattedSize}}}`
+  /// `{count, plural, one {It can be deleted from the device to free up {formattedSize}} other {They can be deleted from the device to free up {formattedSize}}}`
   String freeUpSpaceSaving(num count, Object formattedSize) {
     return Intl.plural(
       count,
@@ -6570,7 +6560,7 @@ class S {
     );
   }
 
-  /// `You can still access {count, plural, =1 {it} other {them}} on Ente as long as you have an active subscription`
+  /// `You can still access {count, plural, one {it} other {them}} on Ente as long as you have an active subscription`
   String freeUpAccessPostDelete(int count) {
     return Intl.message(
       'You can still access ${Intl.plural(count, one: 'it', other: 'them')} on Ente as long as you have an active subscription',
@@ -7280,10 +7270,10 @@ class S {
     );
   }
 
-  /// `We have preserved over 200 million memories so far`
+  /// `We have preserved over 30 million memories so far`
   String get loadMessage2 {
     return Intl.message(
-      'We have preserved over 200 million memories so far',
+      'We have preserved over 30 million memories so far',
       name: 'loadMessage2',
       desc: '',
       args: [],
@@ -8960,7 +8950,7 @@ class S {
     );
   }
 
-  /// `{count, plural, =0 {Add viewer} =1 {Add viewer} other {Add viewers}}`
+  /// `{count, plural, zero {Add viewer} one {Add viewer} other {Add viewers}}`
   String addViewers(num count) {
     return Intl.plural(
       count,
@@ -8973,7 +8963,7 @@ class S {
     );
   }
 
-  /// `{count, plural, =0 {Add collaborator} =1 {Add collaborator} other {Add collaborators}}`
+  /// `{count, plural, zero {Add collaborator} one {Add collaborator} other {Add collaborators}}`
   String addCollaborators(num count) {
     return Intl.plural(
       count,
@@ -9093,26 +9083,6 @@ class S {
       name: 'enterPersonName',
       desc: '',
       args: [],
-    );
-  }
-
-  /// `This email is already linked to {name}.`
-  String editEmailAlreadyLinked(Object name) {
-    return Intl.message(
-      'This email is already linked to $name.',
-      name: 'editEmailAlreadyLinked',
-      desc: '',
-      args: [name],
-    );
-  }
-
-  /// `View {name} to unlink`
-  String viewPersonToUnlink(Object name) {
-    return Intl.message(
-      'View $name to unlink',
-      name: 'viewPersonToUnlink',
-      desc: '',
-      args: [name],
     );
   }
 
@@ -10157,11 +10127,11 @@ class S {
     );
   }
 
-  /// `{count, plural, =0 {Added 0 viewers} =1 {Added 1 viewer} other {Added {count} viewers}}`
+  /// `{count, plural, =0 {Added 0 viewer} =1 {Added 1 viewer} other {Added {count} viewers}}`
   String viewersSuccessfullyAdded(int count) {
     return Intl.plural(
       count,
-      zero: 'Added 0 viewers',
+      zero: 'Added 0 viewer',
       one: 'Added 1 viewer',
       other: 'Added $count viewers',
       name: 'viewersSuccessfullyAdded',
@@ -10385,11 +10355,11 @@ class S {
     );
   }
 
-  /// `{count, plural, =0 {0 photos} =1 {1 photo} other {{count} photos}}`
+  /// `{count, plural, =0 {0 photo} =1 {1 photo} other {{count} photos}}`
   String photosCount(int count) {
     return Intl.plural(
       count,
-      zero: '0 photos',
+      zero: '0 photo',
       one: '1 photo',
       other: '$count photos',
       name: 'photosCount',
@@ -11101,10 +11071,10 @@ class S {
     );
   }
 
-  /// `Generate streamable video`
+  /// `Video streaming`
   String get videoStreaming {
     return Intl.message(
-      'Generate streamable video',
+      'Video streaming',
       name: 'videoStreaming',
       desc: '',
       args: [],
@@ -11795,16 +11765,6 @@ class S {
       args: [],
     );
   }
-
-  /// `Curated memories`
-  String get curatedMemories {
-    return Intl.message(
-      'Curated memories',
-      name: 'curatedMemories',
-      desc: '',
-      args: [],
-    );
-  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
@@ -11823,7 +11783,6 @@ class AppLocalizationDelegate extends LocalizationsDelegate<S> {
       Locale.fromSubtags(languageCode: 'el'),
       Locale.fromSubtags(languageCode: 'es'),
       Locale.fromSubtags(languageCode: 'et'),
-      Locale.fromSubtags(languageCode: 'eu'),
       Locale.fromSubtags(languageCode: 'fa'),
       Locale.fromSubtags(languageCode: 'fr'),
       Locale.fromSubtags(languageCode: 'gu'),
@@ -11840,11 +11799,8 @@ class AppLocalizationDelegate extends LocalizationsDelegate<S> {
       Locale.fromSubtags(languageCode: 'ml'),
       Locale.fromSubtags(languageCode: 'nl'),
       Locale.fromSubtags(languageCode: 'no'),
-      Locale.fromSubtags(languageCode: 'or'),
       Locale.fromSubtags(languageCode: 'pl'),
       Locale.fromSubtags(languageCode: 'pt'),
-      Locale.fromSubtags(languageCode: 'pt', countryCode: 'BR'),
-      Locale.fromSubtags(languageCode: 'pt', countryCode: 'PT'),
       Locale.fromSubtags(languageCode: 'ro'),
       Locale.fromSubtags(languageCode: 'ru'),
       Locale.fromSubtags(languageCode: 'sl'),

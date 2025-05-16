@@ -11,8 +11,6 @@ type PutFileDataRequest struct {
 	EncryptedData    *string         `json:"encryptedData,omitempty"`
 	DecryptionHeader *string         `json:"decryptionHeader,omitempty"`
 	Version          *int            `json:"version,omitempty"`
-	// Used to ensure that the client has correct state before it tries to update the metadata
-	LastUpdatedAt *int64 `json:"lastUpdatedAt,omitempty"`
 }
 
 func (r PutFileDataRequest) isEncDataPresent() bool {

@@ -124,6 +124,7 @@ class _VideoWidgetMediaKitState extends State<VideoWidgetMediaKit>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = getEnteColorScheme(context);
     return Hero(
       tag: widget.tagPrefix! + widget.file.tag,
       child: MaterialVideoControlsTheme(
@@ -141,7 +142,7 @@ class _VideoWidgetMediaKitState extends State<VideoWidgetMediaKit>
           seekBarBufferColor: Colors.transparent,
           seekBarThumbColor: backgroundElevatedLight,
           seekBarColor: fillMutedDark,
-          seekBarPositionColor: backgroundElevatedLight,
+          seekBarPositionColor: colorScheme.primary300,
           seekBarContainerHeight: 56,
           seekBarAlignment: Alignment.center,
 

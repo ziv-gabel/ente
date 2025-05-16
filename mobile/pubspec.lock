@@ -638,14 +638,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
-  ffmpeg_kit_flutter:
+  ffmpeg_kit_flutter_full_gpl:
     dependency: "direct main"
     description:
-      path: "flutter/flutter"
-      ref: android-packaged
-      resolved-ref: "6d5d27a8c259eda6292f204a27fba53da70af20e"
-      url: "https://github.com/ente-io/ffmpeg-kit"
-    source: git
+      name: ffmpeg_kit_flutter_full_gpl
+      sha256: "4f269bcb636bfcb544e5b4d65c706a3d311839970cb42638e72406410c1b5b7b"
+      url: "https://pub.dev"
+    source: hosted
     version: "6.0.3"
   ffmpeg_kit_flutter_platform_interface:
     dependency: transitive
@@ -2023,7 +2022,7 @@ packages:
     source: hosted
     version: "1.0.1"
   pool:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: pool
       sha256: "20fe868b6314b322ea036ba325e6fc0711a22948856475e2c2b6306e8ab39c2a"
@@ -2156,18 +2155,18 @@ packages:
     dependency: "direct main"
     description:
       name: sentry
-      sha256: "077b03f9ee44cfb1eaadbf8af58255e670de62b3f240ca154ce96a5591dc3885"
+      sha256: "90c2f956c146bcc9c4843406dd4a65d08b25575828dc2ad51de0ca5cd713209f"
       url: "https://pub.dev"
     source: hosted
-    version: "8.14.1"
+    version: "8.13.2"
   sentry_flutter:
     dependency: "direct main"
     description:
       name: sentry_flutter
-      sha256: a348e2a365a8ad7682dd09db54f50f19f1c87180b8278f088bc393c511aea5e0
+      sha256: ee6b41956ad570706bf5c2489915d71d75522d154200c0df24be2c4e5654ca21
       url: "https://pub.dev"
     source: hosted
-    version: "8.14.1"
+    version: "8.13.2"
   share_plus:
     dependency: "direct main"
     description:

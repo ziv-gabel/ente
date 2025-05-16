@@ -227,31 +227,31 @@ class _FaceWidgetState extends State<FaceWidget> {
                   ),
                 if (kDebugMode)
                   Text(
-                    'S: ${widget.face.score.toStringAsFixed(3)} (I)',
+                    'S: ${widget.face.score.toStringAsFixed(3)}',
                     style: Theme.of(context).textTheme.bodySmall,
                     maxLines: 1,
                   ),
                 if (kDebugMode)
                   Text(
-                    'B: ${widget.face.blur.toStringAsFixed(0)} (I)',
+                    'B: ${widget.face.blur.toStringAsFixed(0)}',
                     style: Theme.of(context).textTheme.bodySmall,
                     maxLines: 1,
                   ),
                 if (kDebugMode)
                   Text(
-                    'D: ${widget.face.detection.getFaceDirection().toDirectionString()} (I)',
+                    'D: ${widget.face.detection.getFaceDirection().toDirectionString()}',
                     style: Theme.of(context).textTheme.bodySmall,
                     maxLines: 1,
                   ),
                 if (kDebugMode)
                   Text(
-                    'Sideways: ${widget.face.detection.faceIsSideways().toString()} (I)',
+                    'Sideways: ${widget.face.detection.faceIsSideways().toString()}',
                     style: Theme.of(context).textTheme.bodySmall,
                     maxLines: 1,
                   ),
-                if (kDebugMode && widget.face.score < kMinimumFaceShowScore)
+                if (kDebugMode && widget.face.score < 0.75)
                   Text(
-                    'Not visible to user (I)',
+                    '[Debug only]',
                     style: Theme.of(context).textTheme.bodySmall,
                     maxLines: 1,
                   ),

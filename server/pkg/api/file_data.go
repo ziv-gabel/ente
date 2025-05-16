@@ -2,16 +2,12 @@ package api
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/ente-io/museum/ente"
 	fileData "github.com/ente-io/museum/ente/filedata"
-	"github.com/ente-io/museum/pkg/utils/auth"
 	"github.com/ente-io/museum/pkg/utils/handler"
 	"github.com/ente-io/stacktrace"
-	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
+	"net/http"
 )
 
 func (h *FileHandler) PutFileData(ctx *gin.Context) {
@@ -40,8 +36,7 @@ func (h *FileHandler) PutFileData(ctx *gin.Context) {
 func (h *FileHandler) PutVideoData(ctx *gin.Context) {
 	var req fileData.VidPreviewRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		logrus.WithField("req_id", requestid.Get(ctx)).WithError(err).Warn("Request binding failed")
-		handler.Error(ctx, ente.NewBadRequestWithMessage("invalid request body"))
+		handler.Error(ctx, ente.NewBadRequestWithMessage(err.Error()))
 		return
 	}
 	if err := req.Validate(); err != nil {
@@ -103,14 +98,9 @@ func (h *FileHandler) GetFileData(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ente.NewBadRequestWithMessage(err.Error()))
 		return
 	}
-	actorUser := auth.GetUserID(ctx.Request.Header)
-	resp, err := h.FileDataCtrl.GetFileData(ctx, actorUser, req)
+	resp, err := h.FileDataCtrl.GetFileData(ctx, req)
 	if err != nil {
 		handler.Error(ctx, err)
-		return
-	}
-	if resp == nil {
-		ctx.Status(http.StatusNoContent)
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{
@@ -138,8 +128,7 @@ func (h *FileHandler) GetPreviewURL(c *gin.Context) {
 		handler.Error(c, stacktrace.Propagate(ente.ErrBadRequest, fmt.Sprintf("Request binding failed %s", err)))
 		return
 	}
-	actorUser := auth.GetUserID(c.Request.Header)
-	url, err := h.FileDataCtrl.GetPreviewUrl(c, actorUser, request)
+	url, err := h.FileDataCtrl.GetPreviewUrl(c, request)
 	if err != nil {
 		handler.Error(c, stacktrace.Propagate(err, ""))
 		return

@@ -10,7 +10,20 @@ import {
 import React, { useState } from "react";
 import { getEmail, getToken } from "../App"; // Import getEmail and getToken functions
 import { apiOrigin } from "../services/support";
-import type { DisablePasskeysProps, UserData } from "../types";
+
+interface UserData {
+    subscription?: {
+        userID: string;
+        // Add other properties as per your API response structure
+    };
+    // Add other properties as per your API response structure
+}
+
+interface DisablePasskeysProps {
+    open: boolean;
+    handleClose: () => void;
+    handleDisablePasskeys: () => void; // Callback to handle disabling passkeys
+}
 
 const DisablePasskeys: React.FC<DisablePasskeysProps> = ({
     open,

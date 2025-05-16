@@ -135,34 +135,21 @@ export const setPendingUploads = ({
     });
 };
 
-export const markUploadedFile = (
-    path: string,
-    associatedPath: string | undefined,
-) => {
+export const markUploadedFiles = (paths: string[]) => {
     const existing = uploadStatusStore.get("filePaths") ?? [];
-    const updated = existing.filter((p) => p != path && p != associatedPath);
+    const updated = existing.filter((p) => !paths.includes(p));
     uploadStatusStore.set("filePaths", updated);
-    // See: [Note: Integral last modified time]
-    return fs.stat(path).then((st) => st.mtime.getTime());
 };
 
-export const markUploadedZipItem = (
-    item: ZipItem,
-    associatedItem: ZipItem | undefined,
+export const markUploadedZipItems = (
+    items: [zipPath: string, entryName: string][],
 ) => {
     const existing = uploadStatusStore.get("zipItems") ?? [];
-    const updated = exceptZipItem(
-        exceptZipItem(existing, item),
-        associatedItem,
+    const updated = existing.filter(
+        (z) => !items.some((e) => z[0] == e[0] && z[1] == e[1]),
     );
     uploadStatusStore.set("zipItems", updated);
-    return fs.stat(item[0]).then((st) => st.mtime.getTime());
 };
-
-const exceptZipItem = (items: ZipItem[], item: ZipItem | undefined) =>
-    item
-        ? items.filter((zi) => !(zi[0] == item[0] && zi[1] == item[1]))
-        : items;
 
 export const clearPendingUploads = () => {
     uploadStatusStore.clear();

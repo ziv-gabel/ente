@@ -94,7 +94,6 @@ Future<int?> _processAegisExportFile(
   final isEncrypted = decodedJson['header']['slots'] != null;
   Map? aegisDB;
   if (isEncrypted) {
-    await dialog.hide();
     String? password;
     try {
       await showTextInputDialog(
@@ -110,7 +109,6 @@ Future<int?> _processAegisExportFile(
         await dialog.hide();
         return null;
       }
-      await dialog.show();
       final content = decryptAegisVault(decodedJson, password: password!);
       aegisDB = jsonDecode(content);
     } catch (e, s) {

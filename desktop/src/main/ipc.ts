@@ -13,10 +13,8 @@ import type { BrowserWindow } from "electron";
 import { ipcMain } from "electron/main";
 import type {
     CollectionMapping,
-    FFmpegCommand,
     FolderWatch,
     PendingUploads,
-    UtilityProcessType,
     ZipItem,
 } from "../types/ipc";
 import { logToDisk } from "./log";
@@ -32,7 +30,7 @@ import {
     openLogDirectory,
     selectDirectory,
 } from "./services/dir";
-import { ffmpegDetermineVideoDuration, ffmpegExec } from "./services/ffmpeg";
+import { ffmpegExec } from "./services/ffmpeg";
 import {
     fsExists,
     fsFindFiles,
@@ -42,12 +40,12 @@ import {
     fsRename,
     fsRm,
     fsRmdir,
-    fsStatMtime,
     fsWriteFile,
     fsWriteFileViaBackup,
 } from "./services/fs";
 import { convertToJPEG, generateImageThumbnail } from "./services/image";
 import { logout } from "./services/logout";
+import { createMLWorker } from "./services/ml";
 import {
     lastShownChangelogVersion,
     masterKeyB64,
@@ -57,8 +55,8 @@ import {
 import {
     clearPendingUploads,
     listZipItems,
-    markUploadedFile,
-    markUploadedZipItem,
+    markUploadedFiles,
+    markUploadedZipItems,
     pathOrZipItemSize,
     pendingUploads,
     setPendingUploads,
@@ -70,7 +68,6 @@ import {
     watchUpdateIgnoredFiles,
     watchUpdateSyncedFiles,
 } from "./services/watch";
-import { triggerCreateUtilityProcess } from "./services/workers";
 
 /**
  * Listen for IPC events sent/invoked by the renderer process, and route them to
@@ -166,8 +163,6 @@ export const attachIPCHandlers = () => {
 
     ipcMain.handle("fsIsDir", (_, dirPath: string) => fsIsDir(dirPath));
 
-    ipcMain.handle("fsStatMtime", (_, path: string) => fsStatMtime(path));
-
     ipcMain.handle("fsFindFiles", (_, folderPath: string) =>
         fsFindFiles(folderPath),
     );
@@ -182,26 +177,20 @@ export const attachIPCHandlers = () => {
         "generateImageThumbnail",
         (
             _,
-            pathOrZipItem: string | ZipItem,
+            dataOrPathOrZipItem: Uint8Array | string | ZipItem,
             maxDimension: number,
             maxSize: number,
-        ) => generateImageThumbnail(pathOrZipItem, maxDimension, maxSize),
+        ) => generateImageThumbnail(dataOrPathOrZipItem, maxDimension, maxSize),
     );
 
     ipcMain.handle(
         "ffmpegExec",
         (
             _,
-            command: FFmpegCommand,
-            pathOrZipItem: string | ZipItem,
+            command: string[],
+            dataOrPathOrZipItem: Uint8Array | string | ZipItem,
             outputFileExtension: string,
-        ) => ffmpegExec(command, pathOrZipItem, outputFileExtension),
-    );
-
-    ipcMain.handle(
-        "ffmpegDetermineVideoDuration",
-        (_, pathOrZipItem: string | ZipItem) =>
-            ffmpegDetermineVideoDuration(pathOrZipItem),
+        ) => ffmpegExec(command, dataOrPathOrZipItem, outputFileExtension),
     );
 
     // - Upload
@@ -221,15 +210,13 @@ export const attachIPCHandlers = () => {
     );
 
     ipcMain.handle(
-        "markUploadedFile",
-        (_, path: string, associatedPath: string | undefined) =>
-            markUploadedFile(path, associatedPath),
+        "markUploadedFiles",
+        (_, paths: PendingUploads["filePaths"]) => markUploadedFiles(paths),
     );
 
     ipcMain.handle(
-        "markUploadedZipItem",
-        (_, item: ZipItem, associatedItem: ZipItem | undefined) =>
-            markUploadedZipItem(item, associatedItem),
+        "markUploadedZipItems",
+        (_, items: PendingUploads["zipItems"]) => markUploadedZipItems(items),
     );
 
     ipcMain.handle("clearPendingUploads", () => clearPendingUploads());
@@ -240,11 +227,9 @@ export const attachIPCHandlers = () => {
  * the main window to do their thing.
  */
 export const attachMainWindowIPCHandlers = (mainWindow: BrowserWindow) => {
-    // - Utility processes
+    // - ML
 
-    ipcMain.on("triggerCreateUtilityProcess", (_, type: UtilityProcessType) =>
-        triggerCreateUtilityProcess(type, mainWindow),
-    );
+    ipcMain.on("createMLWorker", () => createMLWorker(mainWindow));
 };
 
 /**

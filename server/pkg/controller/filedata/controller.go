@@ -3,7 +3,6 @@ package filedata
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -21,7 +20,6 @@ import (
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 	"sync"
 	gTime "time"
 )
@@ -97,9 +95,6 @@ func (c *Controller) InsertOrUpdateMetadata(ctx *gin.Context, req *fileData.PutF
 	if req.Type != ente.MlData {
 		return stacktrace.Propagate(ente.NewBadRequestWithMessage("unsupported object type "+string(req.Type)), "")
 	}
-	if versionErr := c._validateLastUpdatedAt(ctx, req.LastUpdatedAt, req.FileID, req.Type); versionErr != nil {
-		return stacktrace.Propagate(versionErr, "")
-	}
 
 	bucketID := c.S3Config.GetBucketID(req.Type)
 	objectKey := fileData.ObjectMetadataKey(req.FileID, fileOwnerID, req.Type, nil)
@@ -134,11 +129,12 @@ func (c *Controller) InsertOrUpdateMetadata(ctx *gin.Context, req *fileData.PutF
 	return nil
 }
 
-func (c *Controller) GetFileData(ctx *gin.Context, actorUser int64, req fileData.GetFileData) (*fileData.Entity, error) {
+func (c *Controller) GetFileData(ctx *gin.Context, req fileData.GetFileData) (*fileData.Entity, error) {
+	userID := auth.GetUserID(ctx.Request.Header)
 	if err := req.Validate(); err != nil {
 		return nil, stacktrace.Propagate(err, "validation failed")
 	}
-	if err := c._checkMetadataReadOrWritePerm(ctx, actorUser, []int64{req.FileID}); err != nil {
+	if err := c._checkMetadataReadOrWritePerm(ctx, userID, []int64{req.FileID}); err != nil {
 		return nil, stacktrace.Propagate(err, "")
 	}
 	doRows, err := c.Repo.GetFilesData(ctx, req.Type, []int64{req.FileID})
@@ -146,9 +142,6 @@ func (c *Controller) GetFileData(ctx *gin.Context, actorUser int64, req fileData
 		return nil, stacktrace.Propagate(err, "")
 	}
 	if len(doRows) == 0 || doRows[0].IsDeleted {
-		if req.PreferNoContent {
-			return nil, nil
-		}
 		return nil, stacktrace.Propagate(&ente.ErrNotFoundError, "")
 	}
 	ctxLogger := log.WithFields(log.Fields{
@@ -166,7 +159,6 @@ func (c *Controller) GetFileData(ctx *gin.Context, actorUser int64, req fileData
 		Type:             doRows[0].Type,
 		EncryptedData:    s3MetaObject.EncryptedData,
 		DecryptionHeader: s3MetaObject.DecryptionHeader,
-		UpdatedAt:        doRows[0].UpdatedAt,
 	}, nil
 }
 
@@ -211,7 +203,6 @@ func (c *Controller) GetFilesData(ctx *gin.Context, req fileData.GetFilesData) (
 				Type:             obj.dbEntry.Type,
 				EncryptedData:    obj.s3MetaObject.EncryptedData,
 				DecryptionHeader: obj.s3MetaObject.DecryptionHeader,
-				UpdatedAt:        obj.dbEntry.UpdatedAt,
 			})
 		}
 	}
@@ -320,38 +311,6 @@ func (c *Controller) _checkMetadataReadOrWritePerm(ctx *gin.Context, userID int6
 		FileIDs:     fileIDs,
 	}); err != nil {
 		return stacktrace.Propagate(err, "User does not own some file(s)")
-	}
-	return nil
-}
-
-func (c *Controller) _validateLastUpdatedAt(ctx *gin.Context, lastUpdatedAt *int64, fileID int64, oType ente.ObjectType) error {
-	if lastUpdatedAt == nil {
-		return nil
-	}
-	doRows, err := c.Repo.GetFilesData(ctx, oType, []int64{fileID})
-	if err != nil {
-		return stacktrace.Propagate(err, "failed to get data")
-	}
-	var invalidVersionErr = &ente.ApiError{
-		HttpStatusCode: http.StatusConflict,
-		Code:           "INVALID_VERSION",
-		Message:        "",
-	}
-	if len(doRows) == 0 {
-		if *lastUpdatedAt == 0 {
-			return nil
-		}
-		invalidVersionErr.Message = "non zero version empty data"
-		return invalidVersionErr
-	}
-	if doRows[0].IsDeleted {
-		invalidVersionErr.Message = "data deleted"
-		return invalidVersionErr
-	}
-	dbUpdatedAt := doRows[0].UpdatedAt
-	if dbUpdatedAt != *lastUpdatedAt {
-		invalidVersionErr.Message = fmt.Sprintf("version mismatch expected %d, found %d", dbUpdatedAt, *lastUpdatedAt)
-		return invalidVersionErr
 	}
 	return nil
 }

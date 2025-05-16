@@ -39,7 +39,6 @@ import {
     RowSwitch,
 } from "ente-base/components/RowButton";
 import { Titlebar } from "ente-base/components/Titlebar";
-import { useClipboardCopy } from "ente-base/components/utils/hooks";
 import { useModalVisibility } from "ente-base/components/utils/modal";
 import { useBaseContext } from "ente-base/context";
 import { sharedCryptoWorker } from "ente-base/crypto";
@@ -208,15 +207,16 @@ function SharingDetails({ collection, type }) {
                     </RowButtonGroupTitle>
                     <RowButtonGroup>
                         {viewers.map((item, index) => (
-                            <React.Fragment key={item}>
+                            <>
                                 <RowLabel
+                                    key={item}
                                     label={isMe(item) ? t("you") : item}
                                     startIcon={<Avatar email={item} />}
                                 />
                                 {index !== viewers.length - 1 && (
                                     <RowButtonDivider />
                                 )}
-                            </React.Fragment>
+                            </>
                         ))}
                     </RowButtonGroup>
                 </Stack>
@@ -777,6 +777,7 @@ const AddParticipantForm: React.FC<AddParticipantFormProps> = (props) => {
                                 type="submit"
                                 color="accent"
                                 fullWidth
+                                buttonText={props.buttonText}
                                 loading={loading}
                                 sx={{ mt: 2, mb: 4 }}
                                 {...restSubmitButtonProps}
@@ -1195,7 +1196,7 @@ const PublicShare: React.FC<PublicShareProps> = ({
         }
     }, [publicShareProp]);
 
-    const handleCopyLink = () => {
+    const copyToClipboardHelper = () => {
         navigator.clipboard.writeText(publicShareUrl);
     };
 
@@ -1208,6 +1209,7 @@ const PublicShare: React.FC<PublicShareProps> = ({
                     collection={collection}
                     publicShareUrl={publicShareUrl}
                     onRootClose={onRootClose}
+                    copyToClipboardHelper={copyToClipboardHelper}
                 />
             ) : (
                 <EnablePublicShareOptions
@@ -1218,7 +1220,7 @@ const PublicShare: React.FC<PublicShareProps> = ({
             )}
             <PublicLinkCreated
                 {...publicLinkCreatedVisibilityProps}
-                onCopyLink={handleCopyLink}
+                onCopyLink={copyToClipboardHelper}
             />
         </>
     );
@@ -1230,6 +1232,7 @@ interface ManagePublicShareProps {
     setPublicShareProp: SetPublicShareProp;
     onRootClose: () => void;
     publicShareUrl: string;
+    copyToClipboardHelper: () => void;
 }
 
 const ManagePublicShare: React.FC<ManagePublicShareProps> = ({
@@ -1238,14 +1241,11 @@ const ManagePublicShare: React.FC<ManagePublicShareProps> = ({
     collection,
     onRootClose,
     publicShareUrl,
+    copyToClipboardHelper,
 }) => {
     const [manageShareView, setManageShareView] = useState(false);
-
-    const [copied, handleCopyLink] = useClipboardCopy(publicShareUrl);
-
     const closeManageShare = () => setManageShareView(false);
     const openManageShare = () => setManageShareView(true);
-
     return (
         <>
             <Stack>
@@ -1263,14 +1263,8 @@ const ManagePublicShare: React.FC<ManagePublicShareProps> = ({
                         />
                     ) : (
                         <RowButton
-                            startIcon={
-                                copied ? (
-                                    <DoneIcon sx={{ color: "accent.main" }} />
-                                ) : (
-                                    <ContentCopyIcon />
-                                )
-                            }
-                            onClick={handleCopyLink}
+                            startIcon={<ContentCopyIcon />}
+                            onClick={copyToClipboardHelper}
                             disabled={isLinkExpired(publicShareProp.validTill)}
                             label={t("copy_link")}
                         />
@@ -1324,8 +1318,6 @@ const ManagePublicShareOptions: React.FC<ManagePublicShareOptionsProps> = ({
 
     const [sharableLinkError, setSharableLinkError] = useState(null);
 
-    const [copied, handleCopyLink] = useClipboardCopy(publicShareUrl);
-
     const handleRootClose = () => {
         onClose();
         onRootClose();
@@ -1357,6 +1349,10 @@ const ManagePublicShareOptions: React.FC<ManagePublicShareOptionsProps> = ({
         } finally {
             galleryContext.setBlockingLoad(false);
         }
+    };
+
+    const copyToClipboardHelper = (text: string) => () => {
+        navigator.clipboard.writeText(text);
     };
 
     return (
@@ -1411,14 +1407,8 @@ const ManagePublicShareOptions: React.FC<ManagePublicShareOptionsProps> = ({
                     </RowButtonGroup>
                     <RowButtonGroup>
                         <RowButton
-                            startIcon={
-                                copied ? (
-                                    <DoneIcon sx={{ color: "accent.main" }} />
-                                ) : (
-                                    <ContentCopyIcon />
-                                )
-                            }
-                            onClick={handleCopyLink}
+                            startIcon={<ContentCopyIcon />}
+                            onClick={copyToClipboardHelper(publicShareUrl)}
                             label={t("copy_link")}
                         />
                     </RowButtonGroup>

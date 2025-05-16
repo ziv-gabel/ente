@@ -12,7 +12,7 @@ import { logoutSearch } from "ente-new/photos/services/search";
 import { logoutSettings } from "ente-new/photos/services/settings";
 import { logoutUserDetails } from "ente-new/photos/services/user-details";
 import exportService from "./export";
-import { uploadManager } from "./upload-manager";
+import uploadManager from "./upload/uploadManager";
 
 /**
  * Logout sequence for the photos app.

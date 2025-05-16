@@ -15,6 +15,7 @@ import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import "package:move_to_background/move_to_background.dart";
 import "package:package_info_plus/package_info_plus.dart";
 import 'package:photos/core/configuration.dart';
+import "package:photos/core/constants.dart";
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/events/account_configured_event.dart';
@@ -254,7 +255,8 @@ class _HomeWidgetState extends State<HomeWidget> {
     if (Platform.isAndroid &&
         !localSettings.hasConfiguredInAppLinkPermissions() &&
         RemoteSyncService.instance.isFirstRemoteSyncDone() &&
-        Configuration.instance.isEnteProduction()) {
+        Configuration.instance.getHttpEndpoint() ==
+            kDefaultProductionEndpoint) {
       PackageInfo.fromPlatform().then((packageInfo) {
         final packageName = packageInfo.packageName;
         if (packageName == 'io.ente.photos.independent' ||
@@ -441,18 +443,15 @@ class _HomeWidgetState extends State<HomeWidget> {
     _intentDataStreamSubscription =
         ReceiveSharingIntent.instance.getMediaStream().listen(
       (List<SharedMediaFile> value) {
-        if (value.isEmpty) {
-          return;
-        }
-        if (value[0].path.contains("albums.ente.io")) {
+        if (value.isNotEmpty && value[0].path.contains("albums.ente.io")) {
           final uri = Uri.parse(value[0].path);
           _handlePublicAlbumLink(uri);
           return;
         }
 
-        if (value[0].mimeType != null &&
-            (value[0].mimeType!.contains("image") ||
-                value[0].mimeType!.contains("video"))) {
+        if (value.isNotEmpty &&
+            (value[0].mimeType == "image/*" ||
+                value[0].mimeType == "video/*")) {
           showDialog(
             context: context,
             builder: (BuildContext context) {

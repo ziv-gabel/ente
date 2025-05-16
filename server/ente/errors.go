@@ -279,14 +279,6 @@ func NewBadRequestWithMessage(message string) *ApiError {
 	}
 }
 
-func NewPermissionDeniedError(message string) *ApiError {
-	return &ApiError{
-		Code:           "PERMISSION_DENIED",
-		HttpStatusCode: http.StatusForbidden,
-		Message:        message,
-	}
-}
-
 func NewConflictError(message string) *ApiError {
 	return &ApiError{
 		Code:           CONFLICT,

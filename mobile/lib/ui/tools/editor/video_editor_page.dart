@@ -1,4 +1,3 @@
-import "dart:async";
 import 'dart:io';
 import "dart:math";
 
@@ -14,7 +13,6 @@ import "package:photos/generated/l10n.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/location/location.dart";
 import "package:photos/services/sync/sync_service.dart";
-import "package:photos/ui/common/linear_progress_dialog.dart";
 import "package:photos/ui/notification/toast.dart";
 import "package:photos/ui/tools/editor/export_video_service.dart";
 import 'package:photos/ui/tools/editor/video_crop_page.dart';
@@ -25,7 +23,7 @@ import "package:photos/ui/tools/editor/video_editor/video_editor_player_control.
 import "package:photos/ui/tools/editor/video_rotate_page.dart";
 import "package:photos/ui/tools/editor/video_trim_page.dart";
 import "package:photos/ui/viewer/file/detail_page.dart";
-import "package:photos/utils/exif_util.dart";
+import "package:photos/utils/dialog_util.dart";
 import "package:photos/utils/navigation_util.dart";
 import "package:video_editor/video_editor.dart";
 
@@ -46,20 +44,14 @@ class VideoEditorPage extends StatefulWidget {
 }
 
 class _VideoEditorPageState extends State<VideoEditorPage> {
+  final _exportingProgress = ValueNotifier<double>(0.0);
   final _isExporting = ValueNotifier<bool>(false);
   final _logger = Logger("VideoEditor");
-
-  /// Some videos have a non-zero 'rotation' property in exif which causes the
-  /// video to appear rotated in the video editor preview on Andoird.
-  /// This variable is used as a workaround to rotate the video back to its
-  /// expected orientation in the viewer.
-  int? _quarterTurnsForRotationCorrection;
 
   VideoEditorController? _controller;
 
   @override
   void initState() {
-    _logger.info("Initializing video editor page");
     super.initState();
 
     Future.microtask(() {
@@ -92,12 +84,11 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
         test: (e) => e is VideoMinDurationError,
       );
     });
-
-    _doRotationCorrectionIfAndroid();
   }
 
   @override
   void dispose() async {
+    _exportingProgress.dispose();
     _isExporting.dispose();
     _controller?.dispose().ignore();
     ExportService.dispose().ignore();
@@ -106,7 +97,6 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    _logger.info("Building video editor page");
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -123,9 +113,7 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
           elevation: 0,
           toolbarHeight: 0,
         ),
-        body: _controller != null &&
-                _controller!.initialized &&
-                _quarterTurnsForRotationCorrection != null
+        body: _controller != null && _controller!.initialized
             ? SafeArea(
                 child: Stack(
                   children: [
@@ -137,12 +125,8 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
                               Expanded(
                                 child: Hero(
                                   tag: "video-editor-preview",
-                                  child: RotatedBox(
-                                    quarterTurns:
-                                        _quarterTurnsForRotationCorrection!,
-                                    child: CropGridViewer.preview(
-                                      controller: _controller!,
-                                    ),
+                                  child: CropGridViewer.preview(
+                                    controller: _controller!,
                                   ),
                                 ),
                               ),
@@ -160,8 +144,6 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
                                       MaterialPageRoute<void>(
                                         builder: (context) => VideoTrimPage(
                                           controller: _controller!,
-                                          quarterTurnsForRotationCorrection:
-                                              _quarterTurnsForRotationCorrection!,
                                         ),
                                       ),
                                     ),
@@ -176,8 +158,6 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
                                       MaterialPageRoute<void>(
                                         builder: (context) => VideoCropPage(
                                           controller: _controller!,
-                                          quarterTurnsForRotationCorrection:
-                                              _quarterTurnsForRotationCorrection!,
                                         ),
                                       ),
                                     ),
@@ -192,8 +172,6 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
                                       MaterialPageRoute<void>(
                                         builder: (context) => VideoRotatePage(
                                           controller: _controller!,
-                                          quarterTurnsForRotationCorrection:
-                                              _quarterTurnsForRotationCorrection!,
                                         ),
                                       ),
                                     ),
@@ -224,23 +202,10 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
   }
 
   void exportVideo() async {
+    _exportingProgress.value = 0;
     _isExporting.value = true;
-
-    final dialogKey = GlobalKey<LinearProgressDialogState>();
-    final dialog = LinearProgressDialog(
-      S.of(context).savingEdits,
-      key: dialogKey,
-    );
-
-    unawaited(
-      showDialog(
-        useRootNavigator: false,
-        context: context,
-        builder: (context) {
-          return dialog;
-        },
-      ),
-    );
+    final dialog = createProgressDialog(context, S.of(context).savingEdits);
+    await dialog.show();
 
     final config = VideoFFmpegVideoEditorConfig(
       _controller!,
@@ -258,10 +223,8 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
       await ExportService.runFFmpegCommand(
         await config.getExecuteConfig(),
         onProgress: (stats) {
-          if (dialogKey.currentState != null) {
-            dialogKey.currentState!
-                .setProgress(config.getFFmpegProgress(stats.getTime().toInt()));
-          }
+          _exportingProgress.value =
+              config.getFFmpegProgress(stats.getTime().toInt());
         },
         onError: (e, s) => _logger.severe("Error exporting video", e, s),
         onCompleted: (result) async {
@@ -317,7 +280,7 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
               files.add(newFile);
               selectionIndex = files.length - 1;
             }
-            Navigator.of(dialogKey.currentContext!).pop('dialog');
+            await dialog.hide();
 
             replacePage(
               context,
@@ -329,29 +292,14 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
               ),
             );
           } catch (_) {
-            Navigator.of(dialogKey.currentContext!).pop('dialog');
+            await dialog.hide();
           }
         },
       );
     } catch (_) {
-      Navigator.of(dialogKey.currentContext!).pop('dialog');
+      await dialog.hide();
     } finally {
       await PhotoManager.startChangeNotify();
-    }
-  }
-
-  void _doRotationCorrectionIfAndroid() {
-    if (Platform.isAndroid) {
-      getVideoPropsAsync(widget.ioFile).then((props) async {
-        if (props?.rotation != null) {
-          _quarterTurnsForRotationCorrection = -(props!.rotation! / 90).round();
-        } else {
-          _quarterTurnsForRotationCorrection = 0;
-        }
-        setState(() {});
-      });
-    } else {
-      _quarterTurnsForRotationCorrection = 0;
     }
   }
 }

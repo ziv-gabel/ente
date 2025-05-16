@@ -28,7 +28,7 @@ import { useIsSmallWidth } from "ente-base/components/utils/hooks";
 import { type ModalVisibilityProps } from "ente-base/components/utils/modal";
 import { useBaseContext } from "ente-base/context";
 import { lowercaseExtension } from "ente-base/file-name";
-import { formattedListJoin, ut } from "ente-base/i18n";
+import { formattedListJoin, pt, ut } from "ente-base/i18n";
 import type { LocalUser } from "ente-base/local-user";
 import log from "ente-base/log";
 import {
@@ -63,6 +63,7 @@ import {
     moreButtonID,
     moreMenuID,
     resetMoreMenuButtonOnMenuClose,
+    shouldUsePlayerV2,
     type FileViewerPhotoSwipeDelegate,
 } from "./photoswipe";
 
@@ -781,32 +782,30 @@ export const FileViewer: React.FC<FileViewerProps> = ({
                     // Modify the active annotated file if we found a file with
                     // the same ID in the (possibly) updated files array.
                     //
+                    // Note the omission of the PhotoSwipe refresh: we don't
+                    // refresh the PhotoSwipe dialog itself since that would
+                    // cause the user to lose their pan / zoom etc.
+                    //
                     // This is not correct in its full generality, but it works
-                    // fine in the specific cases we would need to handle (and
-                    // we want to avoid refreshing the entire UI unnecessarily
-                    // lest the user lose their zoom/pan etc):
+                    // fine in the specific cases we would need to handle:
                     //
-                    // - In case of delete or toggling archived that caused the
-                    //   file is no longer part of the list that is shown, we'll
-                    //   not get to this code branch.
+                    // - In case of delete, we'll not get to this code branch.
                     //
-                    // - In case of toggling archive otherwise, just updating
-                    //   the file attribute is enough, the UI state is derived
-                    //   from it; none of the other attributes of the annotated
-                    //   file currently depend on the archive status change.
+                    // - In case of toggling archive, just updating the file
+                    //   attribute is enough, the UI state is derived from it;
+                    //   none of the other attributes of the annotated file
+                    //   currently depend on the archive status change.
                     af = { ...af, file: updatedFile };
                 } else {
-                    // The file we were displaying is no longer part of the list
-                    // of files that should be displayed. Refresh the slides,
-                    // adjusting the indexes as necessary.
+                    // Refreshing the current slide after the current file has
+                    // gone will show the subsequent slide (since that would've
+                    // now moved down to the current index).
                     //
-                    // A special case is when we might've been the last slide,
-                    // in which case we need to go back one slide first. To
-                    // determine this, also pass the expected count of files to
-                    // our PhotoSwipe wrapper.
-                    psRef.current?.refreshCurrentSlideContentAfterRemove(
-                        files.length,
-                    );
+                    // However, we might've been the last slide, in which case
+                    // we need to go back one slide first. To determine this,
+                    // also pass the expected count of files to our PhotoSwipe
+                    // wrapper.
+                    psRef.current?.refreshCurrentSlideContent(files.length);
                 }
             } else {
                 // If there are no more files left, close the viewer.
@@ -830,6 +829,7 @@ export const FileViewer: React.FC<FileViewerProps> = ({
 
             const pswp = new FileViewerPhotoSwipe({
                 initialIndex,
+                disableDownload,
                 haveUser,
                 delegate: delegateRef.current!,
                 onClose: () => {
@@ -1152,12 +1152,22 @@ const Shortcuts: React.FC<ShortcutsProps> = ({
             <Shortcut action={t("close")} shortcut={ut("Esc")} />
             <Shortcut
                 action={formattedListJoin([t("previous"), t("next")])}
-                shortcut={`${formattedListJoin([ut("←"), ut("→")])} ${ut("(Option/Alt)")}`}
+                shortcut={
+                    // TODO(HLS):
+                    shouldUsePlayerV2()
+                        ? `${formattedListJoin([ut("←"), ut("→")])} (Option/Alt)`
+                        : formattedListJoin([ut("←"), ut("→")])
+                }
             />
-            <Shortcut
-                action={t("video_seek")}
-                shortcut={formattedListJoin([ut("←"), ut("→")])}
-            />
+            {
+                /* TODO(HLS): */
+                shouldUsePlayerV2() && (
+                    <Shortcut
+                        action={pt("Video seek")}
+                        shortcut={formattedListJoin([ut("←"), ut("→")])}
+                    />
+                )
+            }
             <Shortcut
                 action={t("zoom")}
                 shortcut={formattedListJoin([t("mouse_scroll"), t("pinch")])}
@@ -1174,10 +1184,15 @@ const Shortcuts: React.FC<ShortcutsProps> = ({
                 action={t("pan")}
                 shortcut={formattedListJoin([ut("W A S D"), t("drag")])}
             />
-            <Shortcut
-                action={formattedListJoin([t("play"), t("pause")])}
-                shortcut={ut("Space")}
-            />
+            {
+                /* TODO(HLS): */
+                shouldUsePlayerV2() && (
+                    <Shortcut
+                        action={pt("Play, Pause")}
+                        shortcut={ut("Space")}
+                    />
+                )
+            }
             <Shortcut action={t("toggle_live")} shortcut={ut("Space")} />
             <Shortcut action={t("toggle_audio")} shortcut={ut("M")} />
             {haveUser && (

@@ -3,9 +3,8 @@ import DoneIcon from "@mui/icons-material/Done";
 import { Box, IconButton, Tooltip, Typography } from "@mui/material";
 import { CenteredRow } from "ente-base/components/containers";
 import { ActivityIndicator } from "ente-base/components/mui/ActivityIndicator";
-import { useClipboardCopy } from "ente-base/components/utils/hooks";
 import { t } from "i18next";
-import React from "react";
+import React, { useState } from "react";
 
 interface CodeBlockProps {
     /**
@@ -63,7 +62,13 @@ interface CopyButtonProps {
 }
 
 export const CopyButton: React.FC<CopyButtonProps> = ({ code }) => {
-    const [copied, handleClick] = useClipboardCopy(code);
+    const [copied, setCopied] = useState(false);
+
+    const handleClick = () =>
+        void navigator.clipboard.writeText(code).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1000);
+        });
 
     const Icon = copied ? DoneIcon : ContentCopyIcon;
 

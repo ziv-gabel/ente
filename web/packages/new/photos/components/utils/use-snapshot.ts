@@ -1,7 +1,3 @@
-import {
-    hlsGenerationStatusSnapshot,
-    hlsGenerationStatusSubscribe,
-} from "ente-gallery/services/video";
 import { useSyncExternalStore } from "react";
 import {
     mlStatusSnapshot,
@@ -42,13 +38,3 @@ export const useMLStatusSnapshot = () =>
  */
 export const usePeopleStateSnapshot = () =>
     useSyncExternalStore(peopleStateSubscribe, peopleStateSnapshot);
-
-/**
- * A convenience hook that returns {@link hlsGenerationStatusSnapshot}, and also
- * subscribes to updates.
- */
-export const useHLSGenerationStatusSnapshot = () =>
-    useSyncExternalStore(
-        hlsGenerationStatusSubscribe,
-        hlsGenerationStatusSnapshot,
-    );

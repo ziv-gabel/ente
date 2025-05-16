@@ -12,7 +12,7 @@ import {
     configureSRP,
     generateKeyAndSRPAttributes,
 } from "ente-accounts/services/srp";
-import { putUserKeyAttributes } from "ente-accounts/services/user";
+import { putAttributes } from "ente-accounts/services/user";
 import { LinkButton } from "ente-base/components/LinkButton";
 import { LoadingIndicator } from "ente-base/components/loaders";
 import { useBaseContext } from "ente-base/context";
@@ -35,6 +35,7 @@ import { useEffect, useState } from "react";
 const Page: React.FC = () => {
     const { logout, showMiniDialog } = useBaseContext();
 
+    const [token, setToken] = useState<string>();
     const [user, setUser] = useState<User>();
     const [openRecoveryKey, setOpenRecoveryKey] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -58,6 +59,7 @@ const Page: React.FC = () => {
         } else if (keyAttributes?.encryptedKey) {
             void router.push("/credentials");
         } else {
+            setToken(user.token);
             setLoading(false);
         }
     }, [router]);
@@ -70,7 +72,8 @@ const Page: React.FC = () => {
             const { keyAttributes, masterKey, srpSetupAttributes } =
                 await generateKeyAndSRPAttributes(passphrase);
 
-            await putUserKeyAttributes(keyAttributes);
+            // TODO: Refactor the code to not require this ensure
+            await putAttributes(token!, keyAttributes);
             await configureSRP(srpSetupAttributes);
             await generateAndSaveIntermediateKeyAttributes(
                 passphrase,

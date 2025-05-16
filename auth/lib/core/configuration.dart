@@ -66,14 +66,14 @@ class Configuration {
 
   String? _volatilePassword;
 
+  final _secureStorageOptionsIOS = const IOSOptions(
+    accessibility: KeychainAccessibility.first_unlock_this_device,
+  );
+
   Future<void> init() async {
     _preferences = await SharedPreferences.getInstance();
     sqfliteFfiInit();
-    _secureStorage = const FlutterSecureStorage(
-      iOptions: IOSOptions(
-        accessibility: KeychainAccessibility.first_unlock_this_device,
-      ),
-    );
+    _secureStorage = const FlutterSecureStorage();
     _tempDirectory = (await DirectoryUtils.getDirectoryForInit()).path;
     final tempDirectory = io.Directory(_tempDirectory);
     try {
@@ -98,6 +98,7 @@ class Configuration {
   Future<void> _initOfflineAccount() async {
     _offlineAuthKey = await _secureStorage.read(
       key: offlineAuthSecretKey,
+      iOptions: _secureStorageOptionsIOS,
     );
   }
 
@@ -107,18 +108,22 @@ class Configuration {
         unawaited(
           _secureStorage.delete(
             key: key,
+            iOptions: _secureStorageOptionsIOS,
           ),
         );
       }
     } else {
       _key = await _secureStorage.read(
         key: keyKey,
+        iOptions: _secureStorageOptionsIOS,
       );
       _secretKey = await _secureStorage.read(
         key: secretKeyKey,
+        iOptions: _secureStorageOptionsIOS,
       );
       _authSecretKey = await _secureStorage.read(
         key: authSecretKeyKey,
+        iOptions: _secureStorageOptionsIOS,
       );
       if (_key == null) {
         await logout(autoLogout: true);
@@ -131,6 +136,7 @@ class Configuration {
     for (String key in onlineSecureKeys) {
       await _secureStorage.delete(
         key: key,
+        iOptions: _secureStorageOptionsIOS,
       );
     }
     await LockScreenSettings.instance.removePinAndPassword();
@@ -390,6 +396,7 @@ class Configuration {
     await _secureStorage.write(
       key: keyKey,
       value: key,
+      iOptions: _secureStorageOptionsIOS,
     );
   }
 
@@ -398,6 +405,7 @@ class Configuration {
     await _secureStorage.write(
       key: secretKeyKey,
       value: secretKey,
+      iOptions: _secureStorageOptionsIOS,
     );
   }
 
@@ -406,6 +414,7 @@ class Configuration {
     await _secureStorage.write(
       key: authSecretKeyKey,
       value: authSecretKey,
+      iOptions: _secureStorageOptionsIOS,
     );
   }
 
@@ -454,15 +463,18 @@ class Configuration {
   Future<void> optForOfflineMode() async {
     if ((await _secureStorage.containsKey(
       key: offlineAuthSecretKey,
+      iOptions: _secureStorageOptionsIOS,
     ))) {
       _offlineAuthKey = await _secureStorage.read(
         key: offlineAuthSecretKey,
+        iOptions: _secureStorageOptionsIOS,
       );
     } else {
       _offlineAuthKey = CryptoUtil.bin2base64(CryptoUtil.generateKey());
       await _secureStorage.write(
         key: offlineAuthSecretKey,
         value: _offlineAuthKey,
+        iOptions: _secureStorageOptionsIOS,
       );
     }
     await _preferences.setBool(hasOptedForOfflineModeKey, true);

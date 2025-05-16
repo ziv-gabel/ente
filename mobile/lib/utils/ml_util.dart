@@ -56,7 +56,7 @@ class FileMLInstruction {
 Future<IndexStatus> getIndexStatus() async {
   try {
     final mlDataDB = MLDataDB.instance;
-    final int indexableFiles = await getIndexableFileCount();
+    final int indexableFiles = (await getIndexableFileIDs()).length;
     final int facesIndexedFiles = await mlDataDB.getFaceIndexedFileCount();
     final int clipIndexedFiles = await mlDataDB.getClipIndexedFileCount();
     final int indexedFiles = math.min(facesIndexedFiles, clipIndexedFiles);
@@ -320,8 +320,9 @@ bool _shouldDiscardRemoteEmbedding(FileDataEntity fileML) {
   return false;
 }
 
-Future<int> getIndexableFileCount() async {
-  return FilesDB.instance.remoteFileCount();
+Future<Set<int>> getIndexableFileIDs() async {
+  final fileIDs = await FilesDB.instance.getAllFileIDs();
+  return fileIDs.toSet();
 }
 
 Future<String> getImagePathForML(EnteFile enteFile) async {

@@ -1,6 +1,5 @@
 ext {
-    compileSdkVersion   = 35
-    targetSdkVersion    = 35
+    appCompatVersion = '1.1.0' // for background_fetch
 }
 
 allprojects {
@@ -11,9 +10,6 @@ allprojects {
         // mavenLocal() // for FDroid
         maven {
             url "${project(':background_fetch').projectDir}/libs"
-        }
-        maven {
-            url "${project(':ffmpeg_kit_flutter').projectDir}/libs"
         }
     }
 }

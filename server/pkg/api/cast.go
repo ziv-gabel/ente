@@ -6,7 +6,6 @@ import (
 	"github.com/ente-io/museum/pkg/controller"
 	"github.com/ente-io/museum/pkg/controller/cast"
 	"github.com/ente-io/museum/pkg/controller/collections"
-	"github.com/ente-io/museum/pkg/utils/auth"
 	"github.com/ente-io/museum/pkg/utils/handler"
 	"github.com/ente-io/stacktrace"
 	"github.com/gin-gonic/gin"
@@ -137,8 +136,7 @@ func (h *CastHandler) getFileForType(c *gin.Context, objectType ente.ObjectType)
 		handler.Error(c, stacktrace.Propagate(ente.ErrBadRequest, ""))
 		return
 	}
-	castCtx := auth.GetCastCtx(c)
-	url, err := h.FileCtrl.GetPublicOrCastFileURL(c, fileID, objectType, castCtx.CollectionID)
+	url, err := h.FileCtrl.GetCastFileUrl(c, fileID, objectType)
 	if err != nil {
 		handler.Error(c, stacktrace.Propagate(err, ""))
 		return

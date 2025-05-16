@@ -9,3 +9,5 @@ export const getKey = (key: SessionKey) => {
 };
 
 export const removeKey = (key: SessionKey) => sessionStorage.removeItem(key);
+
+export const clearKeys = () => sessionStorage.clear();

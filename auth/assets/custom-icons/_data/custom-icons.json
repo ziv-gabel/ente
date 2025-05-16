@@ -43,7 +43,7 @@
       "title": "Anycoin Direct",
       "slug": "anycoindirect"
     },
-    {
+     {
       "title": "Aruba",
       "slug": "aruba",
       "hex": "ef8a33"
@@ -133,14 +133,6 @@
       ]
     },
     {
-      "title": "Bitazza",
-      "slug": "bitazza"
-    },
-    {
-      "title": "Bitkub",
-      "slug": "bitkub"
-    },
-    {
       "title": "Bitfinex"
     },
     {
@@ -192,11 +184,6 @@
       "slug": "blue_sky"
     },
     {
-      "title": "bonify",
-      "slug": "bonify",
-      "altNames": ["bonify.de"]
-    },
-    {
       "title": "Booking",
       "altNames": [
         "Booking.com"
@@ -220,13 +207,6 @@
     },
     {
       "title": "Bugzilla"
-    },
-    {
-      "title": "Bundesagentur für Arbeit",
-      "slug": "bundesagentur_fur_arbeit",
-      "altNames": [
-        "Agentur für Arbeit"
-      ]
     },
     {
       "title": "ButterflyMX",
@@ -406,13 +386,6 @@
       "hex": "858585"
     },
     {
-      "title": "Fanatical",
-      "slug": "fanatical",
-      "altNames": [
-        "FANATICAL"
-      ]
-    },
-    {
       "title": "Fastmail"
     },
     {
@@ -440,9 +413,6 @@
     {
       "title": "Firefox",
       "slug": "mozilla"
-    },
-    {
-      "title": "fortrabbit"
     },
     {
       "title": "ForUsAll"
@@ -538,18 +508,11 @@
       "slug": "id_me"
     },
     {
-      "title": "ImmoScout24",
-      "slug": "immo_scout_24",
-      "altNames": [
-        "ImmobilienScout24"
-      ]
+      "title": "Infomaniak"
     },
     {
       "title": "Impact.com",
       "slug": "impact"
-    },
-    {
-      "title": "Infomaniak"
     },
     {
       "title": "ING"
@@ -652,7 +615,8 @@
     },
     {
       "title": "LinkedIn",
-      "slug": "linkedin"
+      "slug": "linkedin",
+      "hex": "2596be"
     },
     {
       "title": "Linux.Do",
@@ -883,7 +847,7 @@
         "欧易"
       ]
     },
-    {
+     {
       "title": "OnShape",
       "slug": "onshape",
       "hex": "7abb5e"
@@ -940,13 +904,6 @@
     },
     {
       "title": "PostNL"
-    },
-    {
-      "title": "Postmark",
-      "slug": "postmarkapp",
-      "altNames": [
-        "postmarkapp"
-      ]
     },
     {
       "title": "PostScan Mail",
@@ -1007,7 +964,7 @@
       "title": "RealMe",
       "slug": "realme"
     },
-    {
+     {
       "title": "RealVNC",
       "slug": "realvnc",
       "hex": "488aec"

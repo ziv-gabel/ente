@@ -255,7 +255,7 @@ export const addFileEntry = async (fileID: number) => {
  */
 export const updateAssumingLocalFiles = async (
     localFileIDs: number[],
-    localTrashFilesIDs: Set<number>,
+    localTrashFilesIDs: number[],
 ) => {
     const db = await mlDB();
     const tx = db.transaction(
@@ -268,13 +268,14 @@ export const updateAssumingLocalFiles = async (
         .getAllKeys(IDBKeyRange.only("indexed"));
 
     const local = new Set(localFileIDs);
+    const localTrash = new Set(localTrashFilesIDs);
     const fdb = new Set(fdbFileIDs);
     const fdbIndexed = new Set(fdbIndexedFileIDs);
 
     const newFileIDs = localFileIDs.filter((id) => !fdb.has(id));
     const removedFileIDs = fdbFileIDs.filter((id) => {
         if (local.has(id)) return false; // Still exists.
-        if (localTrashFilesIDs.has(id)) {
+        if (localTrash.has(id)) {
             // Exists in trash.
             if (fdbIndexed.has(id)) {
                 // But is already indexed, so let it be.

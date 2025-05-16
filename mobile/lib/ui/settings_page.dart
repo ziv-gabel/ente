@@ -86,10 +86,8 @@ class SettingsPage extends StatelessWidget {
 
     contents.add(const SizedBox(height: 8));
     if (hasLoggedIn) {
-      // show banner in debug mode and ente production
       final showStorageBonusBanner =
-          storageBonusService.shouldShowStorageBonus() &&
-              (kDebugMode || Configuration.instance.isEnteProduction());
+          storageBonusService.shouldShowStorageBonus();
       contents.addAll([
         const StorageCardWidget(),
         (showStorageBonusBanner)

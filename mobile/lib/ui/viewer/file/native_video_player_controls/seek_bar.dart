@@ -5,6 +5,7 @@ import "package:native_video_player/native_video_player.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/events/seekbar_triggered_event.dart";
 import "package:photos/theme/colors.dart";
+import "package:photos/theme/ente_theme.dart";
 import "package:photos/utils/standalone/debouncer.dart";
 
 class SeekBar extends StatefulWidget {
@@ -63,6 +64,7 @@ class _SeekBarState extends State<SeekBar> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = getEnteColorScheme(context);
     return AnimatedBuilder(
       animation: _animationController,
       builder: (_, __) {
@@ -72,7 +74,7 @@ class _SeekBarState extends State<SeekBar> with SingleTickerProviderStateMixin {
             tickMarkShape: SliderTickMarkShape.noTickMark,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0),
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 14.0),
-            activeTrackColor: backgroundElevatedLight,
+            activeTrackColor: colorScheme.primary300,
             inactiveTrackColor: fillMutedDark,
             thumbColor: backgroundElevatedLight,
             overlayColor: fillMutedDark,

@@ -10,7 +10,14 @@ import {
 import React, { useState } from "react";
 import { getEmail, getToken } from "../App"; // Import getEmail and getToken functions
 import { apiOrigin } from "../services/support";
-import type { UserData } from "../types";
+
+interface UserData {
+    subscription?: {
+        userID: string;
+        // Add other properties as per your API response structure
+    };
+    // Add other properties as per your API response structure
+}
 
 interface CloseFamilyProps {
     open: boolean;

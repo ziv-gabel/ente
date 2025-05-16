@@ -66,10 +66,8 @@ import type { IpcRendererEvent } from "electron";
 import type {
     AppUpdate,
     CollectionMapping,
-    FFmpegCommand,
     FolderWatch,
     PendingUploads,
-    UtilityProcessType,
     ZipItem,
 } from "./types/ipc";
 
@@ -185,53 +183,47 @@ const fsWriteFileViaBackup = (path: string, contents: string) =>
 
 const fsIsDir = (dirPath: string) => ipcRenderer.invoke("fsIsDir", dirPath);
 
-const fsStatMtime = (path: string) => ipcRenderer.invoke("fsStatMtime", path);
-
 // - Conversion
 
 const convertToJPEG = (imageData: Uint8Array) =>
     ipcRenderer.invoke("convertToJPEG", imageData);
 
 const generateImageThumbnail = (
-    pathOrZipItem: string | ZipItem,
+    dataOrPathOrZipItem: Uint8Array | string | ZipItem,
     maxDimension: number,
     maxSize: number,
 ) =>
     ipcRenderer.invoke(
         "generateImageThumbnail",
-        pathOrZipItem,
+        dataOrPathOrZipItem,
         maxDimension,
         maxSize,
     );
 
 const ffmpegExec = (
-    command: FFmpegCommand,
-    pathOrZipItem: string | ZipItem,
+    command: string[],
+    dataOrPathOrZipItem: Uint8Array | string | ZipItem,
     outputFileExtension: string,
 ) =>
     ipcRenderer.invoke(
         "ffmpegExec",
         command,
-        pathOrZipItem,
+        dataOrPathOrZipItem,
         outputFileExtension,
     );
 
-const ffmpegDetermineVideoDuration = (pathOrZipItem: string | ZipItem) =>
-    ipcRenderer.invoke("ffmpegDetermineVideoDuration", pathOrZipItem);
+// - ML
 
-// - Utility processes
-
-const triggerCreateUtilityProcess = (type: UtilityProcessType) => {
-    const portEvent = `utilityProcessPort/${type}`;
+const createMLWorker = () => {
     const l = (event: IpcRendererEvent) => {
         void windowLoaded.then(() => {
             // "*"" is the origin to send to.
-            window.postMessage(portEvent, "*", event.ports);
-            ipcRenderer.off(portEvent, l);
+            window.postMessage("createMLWorker/port", "*", event.ports);
+            ipcRenderer.off("createMLWorker/port", l);
         });
     };
-    ipcRenderer.on(portEvent, l);
-    ipcRenderer.send("triggerCreateUtilityProcess", type);
+    ipcRenderer.on("createMLWorker/port", l);
+    ipcRenderer.send("createMLWorker");
 };
 
 // - Watch
@@ -297,11 +289,11 @@ const pendingUploads = () => ipcRenderer.invoke("pendingUploads");
 const setPendingUploads = (pendingUploads: PendingUploads) =>
     ipcRenderer.invoke("setPendingUploads", pendingUploads);
 
-const markUploadedFile = (path: string, associatedPath?: string) =>
-    ipcRenderer.invoke("markUploadedFile", path, associatedPath);
+const markUploadedFiles = (paths: PendingUploads["filePaths"]) =>
+    ipcRenderer.invoke("markUploadedFiles", paths);
 
-const markUploadedZipItem = (item: ZipItem, associatedItem?: ZipItem) =>
-    ipcRenderer.invoke("markUploadedZipItem", item, associatedItem);
+const markUploadedZipItems = (items: PendingUploads["zipItems"]) =>
+    ipcRenderer.invoke("markUploadedZipItems", items);
 
 const clearPendingUploads = () => ipcRenderer.invoke("clearPendingUploads");
 
@@ -386,7 +378,6 @@ contextBridge.exposeInMainWorld("electron", {
         writeFile: fsWriteFile,
         writeFileViaBackup: fsWriteFileViaBackup,
         isDir: fsIsDir,
-        statMtime: fsStatMtime,
         findFiles: fsFindFiles,
     },
 
@@ -395,11 +386,10 @@ contextBridge.exposeInMainWorld("electron", {
     convertToJPEG,
     generateImageThumbnail,
     ffmpegExec,
-    ffmpegDetermineVideoDuration,
 
     // - ML
 
-    triggerCreateUtilityProcess,
+    createMLWorker,
 
     // - Watch
 
@@ -420,7 +410,7 @@ contextBridge.exposeInMainWorld("electron", {
     pathOrZipItemSize,
     pendingUploads,
     setPendingUploads,
-    markUploadedFile,
-    markUploadedZipItem,
+    markUploadedFiles,
+    markUploadedZipItems,
     clearPendingUploads,
 });

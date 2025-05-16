@@ -25,19 +25,20 @@ import {
 import ItemList from "components/ItemList";
 import { FilledIconButton } from "ente-base/components/mui";
 import { useBaseContext } from "ente-base/context";
-import { formattedListJoin } from "ente-base/i18n";
-import { type UploadPhase } from "ente-gallery/services/upload";
+import {
+    type UploadPhase,
+    type UploadResult,
+} from "ente-gallery/services/upload";
 import { SpaceBetweenFlex } from "ente-shared/components/Container";
 import { t } from "i18next";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Trans } from "react-i18next";
 import type {
-    FinishedUploadResult,
     InProgressUpload,
     SegregatedFinishedUploads,
     UploadCounter,
     UploadFileNames,
-} from "services/upload-manager";
+} from "services/upload/uploadManager";
 
 interface UploadProgressProps {
     open: boolean;
@@ -148,19 +149,68 @@ const UploadProgressContext = createContext<UploadProgressContextT>({
 });
 
 const MinimizedUploadProgress: React.FC = () => (
-    <Snackbar open anchorOrigin={{ horizontal: "right", vertical: "bottom" }}>
+    <Snackbar
+        open
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+        sx={(theme) => ({ boxShadow: theme.vars.palette.boxShadow.menu })}
+    >
         <Paper sx={{ width: "min(360px, 100svw)" }}>
             <UploadProgressHeader />
         </Paper>
     </Snackbar>
 );
 
-const UploadProgressHeader: React.FC = () => (
-    <>
-        <UploadProgressTitle />
-        <UploadProgressBar />
-    </>
-);
+function UploadProgressHeader() {
+    return (
+        <>
+            <UploadProgressTitle />
+            <UploadProgressBar />
+        </>
+    );
+}
+
+const UploadProgressTitleText = ({ expanded }) => {
+    return (
+        <Typography variant={expanded ? "h2" : "h3"}>
+            {t("FILE_UPLOAD")}
+        </Typography>
+    );
+};
+
+function UploadProgressSubtitleText() {
+    const { uploadPhase, uploadCounter } = useContext(UploadProgressContext);
+
+    return (
+        <Typography
+            variant="body"
+            sx={{
+                fontWeight: "regular",
+                color: "text.muted",
+                marginTop: "4px",
+            }}
+        >
+            {subtitleText(uploadPhase, uploadCounter)}
+        </Typography>
+    );
+}
+
+const subtitleText = (
+    uploadPhase: UploadPhase,
+    uploadCounter: UploadCounter,
+) => {
+    switch (uploadPhase) {
+        case "preparing":
+            return t("UPLOAD_STAGE_MESSAGE.0");
+        case "readingMetadata":
+            return t("UPLOAD_STAGE_MESSAGE.1");
+        case "uploading":
+            return t("UPLOAD_STAGE_MESSAGE.3", { uploadCounter });
+        case "cancelling":
+            return t("UPLOAD_STAGE_MESSAGE.4");
+        case "done":
+            return t("UPLOAD_STAGE_MESSAGE.5");
+    }
+};
 
 const UploadProgressTitle: React.FC = () => {
     const { setExpanded, onClose, expanded } = useContext(
@@ -172,7 +222,7 @@ const UploadProgressTitle: React.FC = () => {
         <DialogTitle>
             <SpaceBetweenFlex>
                 <Box>
-                    <Typography variant="h3">{t("file_upload")}</Typography>
+                    <UploadProgressTitleText expanded={expanded} />
                     <UploadProgressSubtitleText />
                 </Box>
                 <Box>
@@ -190,87 +240,8 @@ const UploadProgressTitle: React.FC = () => {
     );
 };
 
-const UploadProgressSubtitleText: React.FC = () => {
-    const { uploadPhase, uploadCounter, finishedUploads } = useContext(
-        UploadProgressContext,
-    );
-
-    return (
-        <Typography
-            variant="body"
-            sx={{
-                fontWeight: "regular",
-                color: "text.muted",
-                marginTop: "4px",
-            }}
-        >
-            {subtitleText(uploadPhase, uploadCounter, finishedUploads)}
-        </Typography>
-    );
-};
-
-const subtitleText = (
-    uploadPhase: UploadPhase,
-    uploadCounter: UploadCounter,
-    finishedUploads: SegregatedFinishedUploads | null | undefined,
-) => {
-    switch (uploadPhase) {
-        case "preparing":
-            return t("preparing");
-        case "readingMetadata":
-            return t("upload_reading_metadata_files");
-        case "uploading":
-            return t("processed_counts", {
-                count: uploadCounter.finished,
-                total: uploadCounter.total,
-            });
-        case "cancelling":
-            return t("upload_cancelling");
-        case "done": {
-            const count = uploadedFileCount(finishedUploads);
-            const notCount = notUploadedFileCount(finishedUploads);
-            const items: string[] = [];
-            if (count) items.push(t("upload_done", { count }));
-            if (notCount) items.push(t("upload_skipped", { count: notCount }));
-            if (!items.length) {
-                return t("upload_done", { count });
-            } else {
-                return formattedListJoin(items);
-            }
-        }
-    }
-};
-
-const uploadedFileCount = (
-    finishedUploads: SegregatedFinishedUploads | null | undefined,
-) => {
-    if (!finishedUploads) return 0;
-
-    let c = 0;
-    c += finishedUploads.get("uploaded")?.length ?? 0;
-    c += finishedUploads.get("uploadedWithStaticThumbnail")?.length ?? 0;
-
-    return c;
-};
-
-const notUploadedFileCount = (
-    finishedUploads: SegregatedFinishedUploads | null | undefined,
-) => {
-    if (!finishedUploads) return 0;
-
-    let c = 0;
-    c += finishedUploads.get("alreadyUploaded")?.length ?? 0;
-    c += finishedUploads.get("blocked")?.length ?? 0;
-    c += finishedUploads.get("failed")?.length ?? 0;
-    c += finishedUploads.get("largerThanAvailableStorage")?.length ?? 0;
-    c += finishedUploads.get("tooLarge")?.length ?? 0;
-    c += finishedUploads.get("unsupported")?.length ?? 0;
-    return c;
-};
-
 const UploadProgressBar: React.FC = () => {
     const { uploadPhase, percentComplete } = useContext(UploadProgressContext);
-
     return (
         <Box>
             {(uploadPhase == "readingMetadata" ||
@@ -296,7 +267,18 @@ function UploadProgressDialog() {
     const [hasUnUploadedFiles, setHasUnUploadedFiles] = useState(false);
 
     useEffect(() => {
-        setHasUnUploadedFiles(notUploadedFileCount(finishedUploads) > 0);
+        if (
+            finishedUploads.get("alreadyUploaded")?.length > 0 ||
+            finishedUploads.get("blocked")?.length > 0 ||
+            finishedUploads.get("failed")?.length > 0 ||
+            finishedUploads.get("largerThanAvailableStorage")?.length > 0 ||
+            finishedUploads.get("tooLarge")?.length > 0 ||
+            finishedUploads.get("unsupported")?.length > 0
+        ) {
+            setHasUnUploadedFiles(true);
+        } else {
+            setHasUnUploadedFiles(false);
+        }
     }, [finishedUploads]);
 
     const handleClose: DialogProps["onClose"] = (_, reason) => {
@@ -311,26 +293,26 @@ function UploadProgressDialog() {
                     {uploadPhase == "uploading" && <InProgressSection />}
                     <ResultSection
                         uploadResult="uploaded"
-                        sectionTitle={t("successful_uploads")}
+                        sectionTitle={t("SUCCESSFUL_UPLOADS")}
                     />
                     <ResultSection
                         uploadResult="uploadedWithStaticThumbnail"
-                        sectionTitle={t("thumbnail_generation_failed")}
-                        sectionInfo={t("thumbnail_generation_failed_hint")}
+                        sectionTitle={t("THUMBNAIL_GENERATION_FAILED_UPLOADS")}
+                        sectionInfo={t("THUMBNAIL_GENERATION_FAILED_INFO")}
                     />
                     {uploadPhase == "done" && hasUnUploadedFiles && (
                         <NotUploadSectionHeader>
-                            {t("file_not_uploaded_list")}
+                            {t("FILE_NOT_UPLOADED_LIST")}
                         </NotUploadSectionHeader>
                     )}
                     <ResultSection
                         uploadResult="blocked"
-                        sectionTitle={t("blocked_uploads")}
-                        sectionInfo={<Trans i18nKey={"blocked_uploads_hint"} />}
+                        sectionTitle={t("BLOCKED_UPLOADS")}
+                        sectionInfo={<Trans i18nKey={"ETAGS_BLOCKED"} />}
                     />
                     <ResultSection
                         uploadResult="failed"
-                        sectionTitle={t("failed_uploads")}
+                        sectionTitle={t("FAILED_UPLOADS")}
                         sectionInfo={
                             uploadPhase == "done"
                                 ? undefined
@@ -339,23 +321,25 @@ function UploadProgressDialog() {
                     />
                     <ResultSection
                         uploadResult="alreadyUploaded"
-                        sectionTitle={t("ignored_uploads")}
-                        sectionInfo={t("ignored_uploads_hint")}
+                        sectionTitle={t("SKIPPED_FILES")}
+                        sectionInfo={t("SKIPPED_INFO")}
                     />
                     <ResultSection
                         uploadResult="largerThanAvailableStorage"
-                        sectionTitle={t("insufficient_storage")}
-                        sectionInfo={t("insufficient_storage_hint")}
+                        sectionTitle={t(
+                            "LARGER_THAN_AVAILABLE_STORAGE_UPLOADS",
+                        )}
+                        sectionInfo={t("LARGER_THAN_AVAILABLE_STORAGE_INFO")}
                     />
                     <ResultSection
                         uploadResult="unsupported"
-                        sectionTitle={t("unsupported_files")}
-                        sectionInfo={t("unsupported_files_hint")}
+                        sectionTitle={t("UNSUPPORTED_FILES")}
+                        sectionInfo={t("UNSUPPORTED_INFO")}
                     />
                     <ResultSection
                         uploadResult="tooLarge"
-                        sectionTitle={t("large_files")}
-                        sectionInfo={t("large_files_hint")}
+                        sectionTitle={t("TOO_LARGE_UPLOADS")}
+                        sectionInfo={t("TOO_LARGE_INFO")}
                     />
                 </DialogContent>
             )}
@@ -396,13 +380,13 @@ const InProgressSection: React.FC = () => {
         <SectionAccordion>
             <SectionAccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <TitleText
-                    title={t("uploads_in_progress")}
+                    title={t("INPROGRESS_UPLOADS")}
                     count={inProgressUploads?.length}
                 />
             </SectionAccordionSummary>
             <SectionAccordionDetails>
                 {hasLivePhotos && (
-                    <SectionInfo>{t("live_photos_detected")}</SectionInfo>
+                    <SectionInfo>{t("LIVE_PHOTOS_DETECTED")}</SectionInfo>
                 )}
                 <ItemList
                     items={fileList}
@@ -471,7 +455,7 @@ const NotUploadSectionHeader = styled("div")(
 );
 
 interface ResultSectionProps {
-    uploadResult: FinishedUploadResult;
+    uploadResult: UploadResult;
     sectionTitle: string;
     sectionInfo?: React.ReactNode;
 }
@@ -569,7 +553,7 @@ const DoneFooter: React.FC = () => {
                 (finishedUploads?.get("failed")?.length > 0 ||
                 finishedUploads?.get("blocked")?.length > 0 ? (
                     <Button fullWidth onClick={retryFailed}>
-                        {t("retry_failed_uploads")}
+                        {t("RETRY_FAILED")}
                     </Button>
                 ) : (
                     <Button fullWidth onClick={onClose}>

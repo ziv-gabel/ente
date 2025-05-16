@@ -23,7 +23,7 @@ import type {
 } from "ente-accounts/services/srp-remote";
 import { getSRPAttributes } from "ente-accounts/services/srp-remote";
 import {
-    putUserKeyAttributes,
+    putAttributes,
     sendOTT,
     verifyEmail,
 } from "ente-accounts/services/user";
@@ -31,7 +31,6 @@ import { LinkButton } from "ente-base/components/LinkButton";
 import { LoadingIndicator } from "ente-base/components/loaders";
 import { useBaseContext } from "ente-base/context";
 import log from "ente-base/log";
-import { clearSessionStorage } from "ente-base/session";
 import SingleInputForm, {
     type SingleInputFormProps,
 } from "ente-shared/components/SingleInputForm";
@@ -42,6 +41,7 @@ import {
     getLocalReferralSource,
     setIsFirstLogin,
 } from "ente-shared/storage/localStorage/helpers";
+import { clearKeys } from "ente-shared/storage/sessionStorage";
 import type { KeyAttributes, User } from "ente-shared/user/types";
 import { t } from "i18next";
 import { useRouter } from "next/router";
@@ -137,11 +137,11 @@ const Page: React.FC = () => {
                     setData("keyAttributes", keyAttributes);
                     setData("originalKeyAttributes", keyAttributes);
                 } else {
-                    const originalKeyAttributes = getData(
-                        "originalKeyAttributes",
-                    );
-                    if (originalKeyAttributes) {
-                        await putUserKeyAttributes(originalKeyAttributes);
+                    if (getData("originalKeyAttributes")) {
+                        await putAttributes(
+                            token!,
+                            getData("originalKeyAttributes"),
+                        );
                     }
                     if (getData("srpSetupAttributes")) {
                         const srpSetupAttributes: SRPSetupAttributes =
@@ -153,7 +153,7 @@ const Page: React.FC = () => {
                 setIsFirstLogin(true);
                 const redirectURL = unstashRedirect();
                 if (keyAttributes?.encryptedKey) {
-                    clearSessionStorage();
+                    clearKeys();
                     void router.push(redirectURL ?? "/credentials");
                 } else {
                     void router.push(redirectURL ?? "/generate");

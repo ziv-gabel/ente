@@ -15,7 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
-	"strings"
 	stime "time"
 )
 
@@ -87,18 +86,10 @@ func (c *Controller) uploadObject(obj fileData.S3FileMetadata, objectKey string,
 		Key:    &objectKey,
 		Body:   bytes.NewReader(embeddingObj),
 	}
-	var err error
-	var result *s3manager.UploadOutput
-	for retries := 0; retries < 3; retries++ {
-		result, err = uploader.Upload(&up)
-		if err == nil || !strings.Contains(err.Error(), "connection reset by peer") {
-			break
-		}
-		stime.Sleep(50 * stime.Millisecond)
-	}
+	result, err := uploader.Upload(&up)
 	if err != nil {
 		log.Error(err)
-		return -1, stacktrace.Propagate(err, "metadata upload failed")
+		return -1, stacktrace.Propagate(err, "")
 	}
 	log.Infof("Uploaded to bucket %s", result.Location)
 	return int64(len(embeddingObj)), nil

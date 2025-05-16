@@ -39,9 +39,7 @@ class _LoadingPhotosWidgetState extends State<LoadingPhotosWidget> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 60), () {
-      if (mounted) {
-        oneMinuteOnScreen.value = true;
-      }
+      oneMinuteOnScreen.value = true;
     });
     _firstImportEvent =
         Bus.instance.on<SyncStatusUpdate>().listen((event) async {

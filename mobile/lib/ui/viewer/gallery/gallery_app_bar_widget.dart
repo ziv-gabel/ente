@@ -760,10 +760,8 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
 
   Future<void> _trashCollection() async {
     // Fetch the count by-passing the cache to avoid any stale data
-    final int count = await CollectionsService.instance.getFileCount(
-      widget.collection!,
-      useCache: false,
-    );
+    final int count =
+        await FilesDB.instance.collectionFileCount(widget.collection!.id);
     final bool isEmptyCollection = count == 0;
     if (isEmptyCollection) {
       final dialog = createProgressDialog(
@@ -817,10 +815,9 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
           (galleryType != GalleryType.ownedCollection &&
               galleryType != GalleryType.sharedCollection &&
               galleryType != GalleryType.hiddenOwnedCollection &&
-              galleryType != GalleryType.favorite &&
               !isQuickLink)) {
         throw Exception(
-          "Cannot share collection of type $galleryType",
+          "Cannot share empty collection of type $galleryType",
         );
       }
       if (Configuration.instance.getUserID() == widget.collection!.owner.id) {

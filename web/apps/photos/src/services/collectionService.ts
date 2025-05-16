@@ -1,5 +1,4 @@
 import { encryptMetadataJSON, sharedCryptoWorker } from "ente-base/crypto";
-import { ensureLocalUser } from "ente-base/local-user";
 import log from "ente-base/log";
 import { apiURL } from "ente-base/origins";
 import { UpdateMagicMetadataRequest } from "ente-gallery/services/file";
@@ -38,7 +37,6 @@ import {
     groupFilesByCollectionID,
     sortFiles,
 } from "ente-new/photos/services/files";
-import { getPublicKey } from "ente-new/photos/services/user";
 import HTTPService from "ente-shared/network/HTTPService";
 import { getData } from "ente-shared/storage/localStorage";
 import { getToken } from "ente-shared/storage/localStorage/helpers";
@@ -50,6 +48,7 @@ import {
     isQuickLinkCollection,
     isValidMoveTarget,
 } from "utils/collection";
+import { getPublicKey } from "./userService";
 
 const UNCATEGORIZED_COLLECTION_NAME = "Uncategorized";
 export const HIDDEN_COLLECTION_NAME = ".hidden";
@@ -601,15 +600,10 @@ export const updateShareableURL = async (
     }
 };
 
-/**
- * Return the user's own favorites collection, if any.
- */
 export const getFavCollection = async () => {
     const collections = await getLocalCollections();
-    const userID = ensureLocalUser().id;
     for (const collection of collections) {
-        // See: [Note: User and shared favorites]
-        if (collection.type == "favorites" && collection.owner.id == userID) {
+        if (collection.type == "favorites") {
             return collection;
         }
     }
@@ -633,7 +627,9 @@ export const sortCollectionSummaries = (
                     return (b.updationTime ?? 0) - (a.updationTime ?? 0);
             }
         })
-        .sort((a, b) => (b.order ?? 0) - (a.order ?? 0))
+        // TODO:
+        // eslint-disable-next-line no-constant-binary-expression
+        .sort((a, b) => b.order ?? 0 - a.order ?? 0)
         .sort(
             (a, b) =>
                 CollectionSummaryOrder.get(a.type) -

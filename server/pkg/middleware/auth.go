@@ -48,12 +48,7 @@ func (m *AuthMiddleware) TokenAuthMiddleware(jwtClaimScope *jwt.ClaimScope) gin.
 		var err error
 		if !found {
 			if isJWT {
-				claim, claimErr := m.UserController.ValidateJWTToken(token, *jwtClaimScope)
-				if claimErr != nil {
-					err = claimErr
-				} else {
-					userID = claim.UserID
-				}
+				userID, err = m.UserController.ValidateJWTToken(token, *jwtClaimScope)
 			} else {
 				userID, err = m.UserAuthRepo.GetUserIDWithToken(token, app)
 				if err != nil && !errors.Is(err, sql.ErrNoRows) {

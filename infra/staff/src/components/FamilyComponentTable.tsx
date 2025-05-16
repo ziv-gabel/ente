@@ -13,9 +13,22 @@ import * as React from "react";
 import { useEffect, useState } from "react";
 import { getEmail, getToken } from "../App";
 import { apiOrigin } from "../services/support";
-import type { FamilyMember, UserData } from "../types";
-import { formatUsageToGB } from "../utils/";
 import CloseFamily from "./CloseFamily";
+
+interface FamilyMember {
+    id: string;
+    email: string;
+    status: string;
+    usage: number;
+}
+
+interface UserData {
+    details: {
+        familyData: {
+            members: FamilyMember[];
+        };
+    };
+}
 
 const FamilyTableComponent: React.FC = () => {
     const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
@@ -41,7 +54,7 @@ const FamilyTableComponent: React.FC = () => {
                 }
                 const userData = (await response.json()) as UserData; // Typecast to UserData interface
                 const members: FamilyMember[] =
-                    userData.details?.familyData.members ?? [];
+                    userData.details.familyData.members;
                 setFamilyMembers(members);
             } catch (error) {
                 console.error("Error fetching family data:", error);
@@ -55,6 +68,11 @@ const FamilyTableComponent: React.FC = () => {
             console.error("Fetch data error:", error),
         );
     }, []);
+
+    const formatUsageToGB = (usage: number): string => {
+        const usageInGB = (usage / (1024 * 1024 * 1024)).toFixed(2);
+        return `${usageInGB} GB`;
+    };
 
     const handleOpenCloseFamily = () => {
         setCloseFamilyOpen(true);
@@ -94,9 +112,6 @@ const FamilyTableComponent: React.FC = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell>
-                                <b>ID</b>
-                            </TableCell>
-                            <TableCell>
                                 <b>User</b>
                             </TableCell>
                             <TableCell>
@@ -106,14 +121,13 @@ const FamilyTableComponent: React.FC = () => {
                                 <b>Usage</b>
                             </TableCell>
                             <TableCell>
-                                <b>Quota</b>
+                                <b>ID</b>
                             </TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {familyMembers.map((member) => (
                             <TableRow key={member.id}>
-                                <TableCell>{member.id}</TableCell>
                                 <TableCell>{member.email}</TableCell>
                                 <TableCell>
                                     <span
@@ -138,15 +152,7 @@ const FamilyTableComponent: React.FC = () => {
                                 <TableCell>
                                     {formatUsageToGB(member.usage)}
                                 </TableCell>
-                                <TableCell>
-                                    {member.status !== "SELF"
-                                        ? (member.storageLimit &&
-                                              formatUsageToGB(
-                                                  member.storageLimit,
-                                              )) ||
-                                          "NA"
-                                        : ""}
-                                </TableCell>
+                                <TableCell>{member.id}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

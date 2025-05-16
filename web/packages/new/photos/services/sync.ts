@@ -1,8 +1,4 @@
 import { resetFileViewerDataSourceOnClose } from "ente-gallery/components/viewer/data-source";
-import {
-    videoProcessingSyncIfNeeded,
-    videoPrunePermanentlyDeletedFileIDsIfNeeded,
-} from "ente-gallery/services/video";
 import type { Collection } from "ente-media/collection";
 import type { EnteFile } from "ente-media/file";
 import { isHiddenCollection } from "ente-new/photos/services/collection";
@@ -61,7 +57,7 @@ export const preCollectionAndFilesSync = async () => {
  * See: [Note: Remote sync]
  */
 export const postCollectionAndFilesSync = async () => {
-    await Promise.all([searchDataSync(), videoProcessingSyncIfNeeded()]);
+    await Promise.all([searchDataSync()]);
     // ML sync might take a very long time for initial indexing, so don't wait
     // for it to finish.
     void mlSync();
@@ -144,11 +140,7 @@ export const syncCollectionAndFiles = async (
         opts?.onResetHiddenFiles,
         opts?.onFetchHiddenFiles,
     );
-    await syncTrash(
-        collections,
-        opts?.onResetTrashedFiles,
-        videoPrunePermanentlyDeletedFileIDsIfNeeded,
-    );
+    await syncTrash(collections, opts?.onResetTrashedFiles);
     if (didUpdateNormalFiles || didUpdateHiddenFiles) {
         // TODO: Ok for now since its is only commented for the deduper (gallery
         // does this on the return value), but still needs fixing instead of a

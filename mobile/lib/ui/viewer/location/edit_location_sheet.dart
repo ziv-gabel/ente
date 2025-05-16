@@ -184,11 +184,13 @@ class _EditLocationSheetState extends State<EditLocationSheet> {
                         builder: (context, int? value, _) {
                           Widget widget;
                           if (value == null) {
-                            widget = EnteLoadingWidget(
-                              size: 14,
-                              color: colorScheme.strokeMuted,
-                              alignment: Alignment.centerLeft,
-                              padding: 3,
+                            widget = RepaintBoundary(
+                              child: EnteLoadingWidget(
+                                size: 14,
+                                color: colorScheme.strokeMuted,
+                                alignment: Alignment.centerLeft,
+                                padding: 3,
+                              ),
                             );
                           } else {
                             widget = Column(

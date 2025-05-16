@@ -136,7 +136,7 @@ export const getKV = async (key: string) => {
     return db.get("kv", key);
 };
 
-const _getKV = async <T extends string | number | boolean>(
+export const _getKV = async <T extends string | number | boolean>(
     key: string,
     type: string,
 ): Promise<T | undefined> => {

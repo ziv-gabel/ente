@@ -2,6 +2,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import DiscFullIcon from "@mui/icons-material/DiscFull";
 import GoogleIcon from "@mui/icons-material/Google";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
+import InfoRoundedIcon from "@mui/icons-material/InfoRounded";
 import PermMediaOutlinedIcon from "@mui/icons-material/PermMediaOutlined";
 import {
     Box,
@@ -24,7 +25,7 @@ import {
     type ModalVisibilityProps,
 } from "ente-base/components/utils/modal";
 import { useBaseContext } from "ente-base/context";
-import { basename, dirname, joinPath } from "ente-base/file-name";
+import { basename } from "ente-base/file-name";
 import log from "ente-base/log";
 import type { CollectionMapping, Electron, ZipItem } from "ente-base/types/ipc";
 import { useFileInput } from "ente-gallery/components/utils/use-file-input";
@@ -54,6 +55,7 @@ import React, {
     useRef,
     useState,
 } from "react";
+import { Trans } from "react-i18next";
 import {
     getPublicCollectionUID,
     getPublicCollectionUploaderName,
@@ -65,8 +67,8 @@ import type {
     UploadCounter,
     UploadFileNames,
     UploadItemWithCollection,
-} from "services/upload-manager";
-import { uploadManager } from "services/upload-manager";
+} from "services/upload/uploadManager";
+import uploadManager from "services/upload/uploadManager";
 import watcher from "services/watch";
 import { SetLoading } from "types/gallery";
 import { getOrCreateAlbum } from "utils/collection";
@@ -117,8 +119,6 @@ interface UploadProps {
 }
 
 type UploadType = "files" | "folders" | "zips";
-
-type UploadItemAndPath = [UploadItem, string];
 
 /**
  * Top level component that houses the infrastructure for handling uploads.
@@ -212,7 +212,7 @@ export const Upload: React.FC<UploadProps> = ({
      *
      * See the documentation of {@link UploadItem} for more details.
      */
-    const uploadItemsAndPaths = useRef<UploadItemAndPath[]>([]);
+    const uploadItemsAndPaths = useRef<[UploadItem, string][]>([]);
 
     /**
      * If true, then the next upload we'll be processing was initiated by our
@@ -414,8 +414,6 @@ export const Upload: React.FC<UploadProps> = ({
         //
         // - All the paths use POSIX separators. See inline comments.
         //
-        // - For zips we concatenate the path of the zip to the path within the
-        //   zip for the purpose of computing the nesting.
         const allItemAndPaths = [
             // Relative path (using POSIX separators) or the file's name.
             webFiles.map((f) => [f, pathLikeForWebFile(f)]),
@@ -424,17 +422,12 @@ export const Upload: React.FC<UploadProps> = ({
             // which return POSIX paths.
             desktopFiles.map((fp) => [fp, fp.path]),
             desktopFilePaths.map((p) => [p, p]),
-            // Concatenate the path of the item within the zip to path of the
-            // zip. This won't affect the upload: this path is only used for
-            // computation of the "parent" folder, and this concatenation best
-            // reflects the nesting.
-            //
-            // Re POSIXness: The first path, that of the zip file itself, is
-            // POSIX like the other paths we get over the IPC boundary. And the
-            // second path, ze[1], the entry name, uses POSIX separators because
-            // that is what the ZIP format uses.
-            desktopZipItems.map((ze) => [ze, joinPath(dirname(ze[0]), ze[1])]),
-        ].flat() as UploadItemAndPath[];
+            // The first path, that of the zip file itself, is POSIX like the
+            // other paths we get over the IPC boundary. And the second path,
+            // ze[1], the entry name, uses POSIX separators because that is what
+            // the ZIP format uses.
+            desktopZipItems.map((ze) => [ze, ze[1]]),
+        ].flat() as [UploadItem, string][];
 
         if (allItemAndPaths.length == 0) return;
 
@@ -461,7 +454,8 @@ export const Upload: React.FC<UploadProps> = ({
 
         // Remove hidden files (files whose names begins with a ".").
         const prunedItemAndPaths = allItemAndPaths.filter(
-            ([, p]) => !basename(p).startsWith("."),
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            ([_, p]) => !basename(p).startsWith("."),
         );
 
         uploadItemsAndPaths.current = prunedItemAndPaths;
@@ -470,9 +464,10 @@ export const Upload: React.FC<UploadProps> = ({
             return;
         }
 
-        const importSuggestion = deriveImportSuggestion(
+        const importSuggestion = getImportSuggestion(
             selectedUploadType.current,
-            prunedItemAndPaths.map(([, p]) => p),
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            prunedItemAndPaths.map(([_, p]) => p),
         );
         setImportSuggestion(importSuggestion);
 
@@ -591,7 +586,6 @@ export const Upload: React.FC<UploadProps> = ({
         } else {
             collectionNameToUploadItems = groupFilesBasedOnParentFolder(
                 uploadItemsAndPaths.current,
-                collectionName,
             );
         }
         try {
@@ -809,12 +803,44 @@ export const Upload: React.FC<UploadProps> = ({
         }
     };
 
-    const handleCollectionMappingSelect = (mapping: CollectionMapping) =>
-        uploadFilesToNewCollections(
-            mapping,
-            importSuggestion.rootFolderName ??
-                t("autogenerated_default_album_name"),
-        );
+    const handleCollectionMappingSelect = (mapping: CollectionMapping) => {
+        switch (mapping) {
+            case "root":
+                uploadToSingleNewCollection(
+                    // rootFolderName would be empty here if one edge case:
+                    // - User drags and drops a mixture of files and folders
+                    // - They select the "upload to multiple albums" option
+                    // - The see the error, close the error
+                    // - Then they select the "upload to single album" option
+                    //
+                    // In such a flow, we'll reach here with an empty
+                    // rootFolderName. The proper fix for this would be
+                    // rearrange the flow and ask them to name the album here,
+                    // but we currently don't have support for chaining modals.
+                    // So in the meanwhile, keep a fallback album name at hand.
+                    importSuggestion.rootFolderName ??
+                        t("autogenerated_default_album_name"),
+                );
+                break;
+            case "parent":
+                if (importSuggestion.hasRootLevelFileWithFolder) {
+                    showMiniDialog({
+                        icon: <InfoRoundedIcon />,
+                        title: t("root_level_file_with_folder_not_allowed"),
+                        message: (
+                            <Trans
+                                i18nKey={
+                                    "root_level_file_with_folder_not_allowed_message"
+                                }
+                            />
+                        ),
+                        cancel: t("ok"),
+                    });
+                } else {
+                    uploadFilesToNewCollections("parent");
+                }
+        }
+    };
 
     return (
         <>
@@ -940,17 +966,19 @@ const pathLikeForWebFile = (file: File): string =>
 interface ImportSuggestion {
     rootFolderName: string;
     hasNestedFolders: boolean;
+    hasRootLevelFileWithFolder: boolean;
 }
 
 const defaultImportSuggestion: ImportSuggestion = {
     rootFolderName: "",
     hasNestedFolders: false,
+    hasRootLevelFileWithFolder: false,
 };
 
-const deriveImportSuggestion = (
+function getImportSuggestion(
     uploadType: UploadType,
     paths: string[],
-): ImportSuggestion => {
+): ImportSuggestion {
     if (isDesktop && uploadType == "files") {
         return defaultImportSuggestion;
     }
@@ -986,58 +1014,40 @@ const deriveImportSuggestion = (
     return {
         rootFolderName: commonPathPrefix || null,
         hasNestedFolders: firstFileFolder !== lastFileFolder,
+        hasRootLevelFileWithFolder: firstFileFolder === "",
     };
-};
+}
 
-/**
- * Group files that are that have the same parent folder into collections.
- *
- * For Example, if the user selects files have a directory structure like:
- *
- *               a
- *             / |  \
- *            b  j   c
- *           /|\    /  \
- *          e f g   h  i
- *
- * The files will grouped into 3 collections:
- *
- *     [
- *       a => [j],
- *       b => [e,f,g],
- *       c => [h, i]
- *     ]
- *
- * @param defaultFolderName Optional collection name to use for any rooted files
- * that do not have a parent folder. The function will throw if a default is not
- * provided and we encounter any such files without a parent.
- */
+// This function groups files that are that have the same parent folder into collections
+// For Example, for user files have a directory structure like this
+//              a
+//            / |  \
+//           b  j   c
+//          /|\    /  \
+//         e f g   h  i
+//
+// The files will grouped into 3 collections.
+// [a => [j],
+// b => [e,f,g],
+// c => [h, i]]
 const groupFilesBasedOnParentFolder = (
-    uploadItemAndPaths: UploadItemAndPath[],
-    defaultFolderName: string | undefined,
+    uploadItemsAndPaths: [UploadItem, string][],
 ) => {
     const result = new Map<string, UploadItem[]>();
-    for (const [uploadItem, pathOrName] of uploadItemAndPaths) {
+    for (const [uploadItem, pathOrName] of uploadItemsAndPaths) {
         let folderPath = pathOrName.substring(0, pathOrName.lastIndexOf("/"));
-        // If the parent folder of a file is "metadata", then we consider it to
-        // be part of the parent folder.
-        //
-        // e.g. for FileList
-        //
-        //    [a/x.png, a/metadata/x.png.json]
-        //
-        // they will both be grouped into the collection "a". This is so that we
-        // cluster the metadata json files in the same collection as the file it
-        // is for.
+        // If the parent folder of a file is "metadata"
+        // we consider it to be part of the parent folder
+        // For Eg,For FileList  -> [a/x.png, a/metadata/x.png.json]
+        // they will both we grouped into the collection "a"
+        // This is cluster the metadata json files in the same collection as the file it is for
         if (folderPath.endsWith(exportMetadataDirectoryName)) {
             folderPath = folderPath.substring(0, folderPath.lastIndexOf("/"));
         }
-        let folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
-        if (!folderName) {
-            if (!defaultFolderName)
-                throw Error(`Leaf file (without default): ${folderPath}`);
-            folderName = defaultFolderName;
-        }
+        const folderName = folderPath.substring(
+            folderPath.lastIndexOf("/") + 1,
+        );
+        if (!folderName) throw Error("Unexpected empty folder name");
         if (!result.has(folderName)) result.set(folderName, []);
         result.get(folderName).push(uploadItem);
     }

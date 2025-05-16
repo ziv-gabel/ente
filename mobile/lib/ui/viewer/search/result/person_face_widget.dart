@@ -61,15 +61,6 @@ class _PersonFaceWidgetState extends State<PersonFaceWidget> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-    checkStopTryingToGenerateFaceThumbnails(
-      widget.file,
-      useFullFile: widget.useFullFile,
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     return FutureBuilder<Uint8List?>(
       future: faceCropFuture,

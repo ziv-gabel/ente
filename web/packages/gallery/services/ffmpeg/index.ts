@@ -2,14 +2,14 @@ import { ensureElectron } from "ente-base/electron";
 import log from "ente-base/log";
 import type { Electron } from "ente-base/types/ipc";
 import {
-    toPathOrZipEntry,
-    type FileSystemUploadItem,
+    toDataOrPathOrZipEntry,
+    type DesktopUploadItem,
     type UploadItem,
 } from "ente-gallery/services/upload";
 import {
-    initiateConvertToMP4,
-    readVideoStream,
-    videoStreamDone,
+    readConvertToMP4Done,
+    readConvertToMP4Stream,
+    writeConvertToMP4Stream,
 } from "ente-gallery/utils/native-stream";
 import {
     parseMetadataDate,
@@ -20,7 +20,7 @@ import {
     inputPathPlaceholder,
     outputPathPlaceholder,
 } from "./constants";
-import { determineVideoDurationWeb, ffmpegExecWeb } from "./web";
+import { ffmpegExecWeb } from "./web";
 
 /**
  * Generate a thumbnail for the given video using a Wasm FFmpeg running in a web
@@ -69,64 +69,42 @@ const _generateVideoThumbnail = async (
  */
 export const generateVideoThumbnailNative = async (
     electron: Electron,
-    fsUploadItem: FileSystemUploadItem,
+    desktopUploadItem: DesktopUploadItem,
 ) =>
     _generateVideoThumbnail((seekTime: number) =>
         electron.ffmpegExec(
             makeGenThumbnailCommand(seekTime),
-            toPathOrZipEntry(fsUploadItem),
+            toDataOrPathOrZipEntry(desktopUploadItem),
             "jpeg",
         ),
     );
 
-const makeGenThumbnailCommand = (seekTime: number) => ({
-    default: _makeGenThumbnailCommand(seekTime, false),
-    hdr: _makeGenThumbnailCommand(seekTime, true),
-});
-
-const _makeGenThumbnailCommand = (seekTime: number, forHDR: boolean) => [
+const makeGenThumbnailCommand = (seekTime: number) => [
     ffmpegPathPlaceholder,
     "-i",
     inputPathPlaceholder,
-    // Seek to seekTime in the video.
     "-ss",
     `00:00:0${seekTime}`,
-    // Take the first frame
     "-vframes",
     "1",
-    // Apply a filter to this frame
     "-vf",
-    [
-        // Scale it to a maximum height of 720 keeping aspect ratio, ensuring
-        // that the dimensions are even (subsequent filters require this).
-        "scale=-2:720",
-        forHDR
-            ? // Apply a tonemap to ensure that thumbnails of HDR videos do
-              // not look washed out. See: [Note: Tonemapping HDR to HD].
-              [
-                  "zscale=transfer=linear",
-                  "tonemap=tonemap=hable:desat=0",
-                  "zscale=primaries=709:transfer=709:matrix=709",
-              ]
-            : [],
-    ]
-        .flat()
-        .join(","),
+    "scale=-1:720",
     outputPathPlaceholder,
 ];
 
 /**
- * Extract metadata from the given video.
+ * Extract metadata from the given video
  *
- * When we're running in the context of our desktop app _and_ we're passed an
- * upload item that resolves to a path of the user's file system, this uses the
- * native FFmpeg bundled with our desktop app. Otherwise it uses a Wasm build of
- * FFmpeg running in a web worker.
+ * When we're running in the context of our desktop app _and_ we're passed a
+ * file path , this uses the native FFmpeg bundled with our desktop app.
+ * Otherwise it uses a Wasm build of FFmpeg running in a web worker.
  *
- * This function is called during upload, when we need to extract the
- * "ffmetadata" of videos that the user is uploading.
+ * This function is called during upload, when we need to extract the metadata
+ * of videos that the user is uploading.
  *
- * @param uploadItem The video item being uploaded.
+ * @param uploadItem A {@link File}, or the absolute path to a file on the
+ * user's local file system. A path can only be provided when we're running in
+ * the context of our desktop app.
  */
 export const extractVideoMetadata = async (
     uploadItem: UploadItem,
@@ -137,7 +115,7 @@ export const extractVideoMetadata = async (
             ? await ffmpegExecWeb(command, uploadItem, "txt")
             : await ensureElectron().ffmpegExec(
                   command,
-                  toPathOrZipEntry(uploadItem),
+                  toDataOrPathOrZipEntry(uploadItem),
                   "txt",
               ),
     );
@@ -260,26 +238,6 @@ const parseFFMetadataDate = (s: string | undefined) => {
 };
 
 /**
- * Extract the duration (in seconds) from the given video
- *
- * This is a sibling of {@link extractVideoMetadata}, except it tries to
- * determine the duration of the video. The duration is not part of the
- * "ffmetadata", and is instead a property of the video itself.
- *
- * @param uploadItem The video item being uploaded.
- *
- * @return the duration of the video in seconds (a floating point number).
- */
-export const determineVideoDuration = async (
-    uploadItem: UploadItem,
-): Promise<number> =>
-    uploadItem instanceof File
-        ? determineVideoDurationWeb(uploadItem)
-        : ensureElectron().ffmpegDetermineVideoDuration(
-              toPathOrZipEntry(uploadItem),
-          );
-
-/**
  * Convert a video from a format that is not supported in the browser to MP4.
  *
  * This function is called when the user views a video or a live photo, and we
@@ -308,10 +266,59 @@ export const convertToMP4 = async (blob: Blob): Promise<Blob | Uint8Array> => {
 };
 
 const convertToMP4Native = async (electron: Electron, blob: Blob) => {
-    const token = await initiateConvertToMP4(electron, blob);
-    const mp4Blob = await readVideoStream(electron, token).then((res) =>
-        res.blob(),
-    );
-    await videoStreamDone(electron, token);
+    const token = await writeConvertToMP4Stream(electron, blob);
+    const mp4Blob = await readConvertToMP4Stream(electron, token);
+    await readConvertToMP4Done(electron, token);
     return mp4Blob;
 };
+
+/**
+ * Generate a preview variant of for the given video using a Wasm FFmpeg running
+ * in a web worker.
+ *
+ * See: [Note: Preview variant of videos].
+ *
+ * @param blob The input video blob.
+ *
+ * @returns The output video blob containing the generated preview variant.
+ */
+export const generateVideoPreviewVariantWeb = async (blob: Blob) =>
+    ffmpegExecWeb(transcodeAndGenerateHLSPlaylistCommand, blob, "hls");
+
+/**
+ * The FFmpeg command to use to create a preview variant of videos.
+ *
+ * Current parameters
+ *
+ * - H264
+ * - 720p width
+ * - 2000kbps bitrate
+ * - 30fps frame rate
+ */
+const transcodeAndGenerateHLSPlaylistCommand = [
+    ffmpegPathPlaceholder,
+    // Input file. We don't need any extra options that apply to the input file.
+    "-i",
+    inputPathPlaceholder,
+    // The remaining options apply to the next file, `outputPathPlaceholder`.
+    // ---
+    // `-vf` creates a filter graph for the video stream.
+    "-vf",
+    // `-vf scale=720:-1` scales the video to 720p width, keeping aspect ratio.
+    "scale=720:-1",
+    // `-r 30` sets the frame rate to 30 fps.
+    "-r",
+    "30",
+    // `-c:v libx264` sets the codec for the video stream to H264.
+    "-c:v",
+    "libx264",
+    // `-b:v 2000k` sets the bitrate for the video stream.
+    "-b:v",
+    "2000k",
+    // `-c:a aac -b:a 128k` converts the audio stream to 128k bit AAC.
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
+    outputPathPlaceholder,
+];

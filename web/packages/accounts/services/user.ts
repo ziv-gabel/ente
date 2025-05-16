@@ -127,7 +127,7 @@ export const verifyEmail = async (
 /**
  * Zod schema for {@link KeyAttributes}.
  */
-export const RemoteKeyAttributes = z.object({
+const RemoteKeyAttributes = z.object({
     kekSalt: z.string(),
     encryptedKey: z.string(),
     keyDecryptionNonce: z.string(),
@@ -195,17 +195,17 @@ export type TwoFactorAuthorizationResponse = z.infer<
     typeof TwoFactorAuthorizationResponse
 >;
 
-/**
- * Update or set the user's {@link KeyAttributes} on remote.
- */
-export const putUserKeyAttributes = async (keyAttributes: KeyAttributes) =>
-    ensureOk(
-        await fetch(await apiURL("/users/attributes"), {
-            method: "PUT",
-            headers: await authenticatedRequestHeaders(),
-            body: JSON.stringify({ keyAttributes }),
-        }),
+export const putAttributes = async (
+    token: string,
+    keyAttributes: KeyAttributes,
+) =>
+    HTTPService.put(
+        await apiURL("/users/attributes"),
+        { keyAttributes },
+        undefined,
+        { "X-Auth-Token": token },
     );
+
 /**
  * Log the user out on remote, if possible and needed.
  */

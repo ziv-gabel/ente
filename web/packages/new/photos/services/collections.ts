@@ -343,29 +343,9 @@ export async function cleanTrashCollections(fileTrash: Trash) {
 async function getLastTrashSyncTime() {
     return (await localForage.getItem<number>(TRASH_TIME)) ?? 0;
 }
-
-/**
- * Update our locally saved data about the files and collections in trash by
- * syncing with remote.
- *
- * The sync uses a diff-based mechanism that syncs forward from the last sync
- * time (also persisted).
- *
- * @param onUpdateTrashFiles A callback invoked when the locally persisted trash
- * items are updated. This can be used for the UI to also update its state. This
- * callback can be invoked multiple times during the sync (once for each batch
- * that gets processed).
- *
- * @param onPruneDeletedFileIDs A callback invoked when files that were
- * previously in trash have now been permanently deleted. This can be used by
- * other subsystems to prune data referring to files that now have been deleted
- * permanently. This callback can be invoked multiple times during the sync
- * (once for each batch that gets processed).
- */
 export async function syncTrash(
     collections: Collection[],
-    onUpdateTrashFiles: ((files: EnteFile[]) => void) | undefined,
-    onPruneDeletedFileIDs: (deletedFileIDs: Set<number>) => Promise<void>,
+    setTrashedFiles: ((fs: EnteFile[]) => void) | undefined,
 ): Promise<void> {
     const trash = await getLocalTrash();
     collections = [...collections, ...(await getLocalDeletedCollections())];
@@ -379,23 +359,21 @@ export async function syncTrash(
 
     const updatedTrash = await updateTrash(
         collectionMap,
-        trash,
         lastSyncTime,
-        onUpdateTrashFiles,
-        onPruneDeletedFileIDs,
+        setTrashedFiles,
+        trash,
     );
     await cleanTrashCollections(updatedTrash);
 }
 
-const updateTrash = async (
+export const updateTrash = async (
     collections: Map<number, Collection>,
-    currentTrash: Trash,
     sinceTime: number,
-    onUpdateTrashFiles: ((files: EnteFile[]) => void) | undefined,
-    onPruneDeletedFileIDs: (deletedFileIDs: Set<number>) => Promise<void>,
+    setTrashedFiles: ((fs: EnteFile[]) => void) | undefined,
+    currentTrash: Trash,
 ): Promise<Trash> => {
-    let updatedTrash: Trash = [...currentTrash];
     try {
+        let updatedTrash: Trash = [...currentTrash];
         let time = sinceTime;
 
         let resp;
@@ -409,7 +387,6 @@ const updateTrash = async (
                 { sinceTime: time },
                 { "X-Auth-Token": token },
             );
-            const deletedFileIDs = new Set<number>();
             // #Perf: This can be optimized by running the decryption in parallel
             for (const trashItem of resp.data.diff as EncryptedTrashItem[]) {
                 const collectionID = trashItem.file.collectionID;
@@ -420,9 +397,6 @@ const updateTrash = async (
                     await localForage.setItem(DELETED_COLLECTION, [
                         ...collections.values(),
                     ]);
-                }
-                if (trashItem.isDeleted) {
-                    deletedFileIDs.add(trashItem.file.id);
                 }
                 if (!trashItem.isDeleted && !trashItem.isRestored) {
                     const decryptedFile = await decryptFile(
@@ -441,17 +415,15 @@ const updateTrash = async (
                 time = resp.data.diff.slice(-1)[0].updatedAt;
             }
 
-            onUpdateTrashFiles?.(getTrashedFiles(updatedTrash));
-            if (deletedFileIDs.size > 0) {
-                await onPruneDeletedFileIDs(deletedFileIDs);
-            }
+            setTrashedFiles?.(getTrashedFiles(updatedTrash));
             await localForage.setItem(TRASH, updatedTrash);
             await localForage.setItem(TRASH_TIME, time);
         } while (resp.data.hasMore);
+        return updatedTrash;
     } catch (e) {
         log.error("Get trash files failed", e);
     }
-    return updatedTrash;
+    return currentTrash;
 };
 
 export const emptyTrash = async () => {

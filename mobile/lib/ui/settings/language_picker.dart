@@ -98,19 +98,9 @@ class _ItemsWidgetState extends State<ItemsWidget> {
   @override
   Widget build(BuildContext context) {
     items.clear();
-    bool foundMatch = false;
     for (Locale locale in widget.supportedLocales) {
-      if (currentLocale == locale) {
-        foundMatch = true;
-      }
       items.add(
         _menuItemForPicker(locale),
-      );
-    }
-    if (!foundMatch && kDebugMode) {
-      items.insert(
-        0,
-        Text("(i) Locale : ${currentLocale.toString()}"),
       );
     }
     items = addSeparators(
@@ -142,8 +132,6 @@ class _ItemsWidgetState extends State<ItemsWidget> {
         return '日本語';
       case 'nl':
         return 'Nederlands';
-      case 'no':
-        return 'Norsk';
       case 'pl':
         return 'Polski';
       case 'pt':

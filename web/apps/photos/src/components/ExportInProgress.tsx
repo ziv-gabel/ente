@@ -38,16 +38,16 @@ export default function ExportInProgress(props: Props) {
                         {props.exportStage === ExportStage.starting ? (
                             t("export_starting")
                         ) : props.exportStage === ExportStage.migration ? (
-                            t("export_preparing")
+                            t("preparing")
                         ) : props.exportStage ===
                           ExportStage.renamingCollectionFolders ? (
-                            t("export_renaming_album_folders")
+                            t("renaming_album_folders")
                         ) : props.exportStage ===
                           ExportStage.trashingDeletedFiles ? (
-                            t("export_trashing_deleted_files")
+                            t("trashing_deleted_files")
                         ) : props.exportStage ===
                           ExportStage.trashingDeletedCollections ? (
-                            t("export_trashing_deleted_albums")
+                            t("trashing_deleted_albums")
                         ) : (
                             <Typography
                                 component="span"

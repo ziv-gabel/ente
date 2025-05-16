@@ -81,10 +81,7 @@ void _buildPrettyString(
   }
 }
 
-Future<DirectoryStat> getDirectoryStat(
-  Directory directory, {
-  String? prefix,
-}) async {
+Future<DirectoryStat> getDirectoryStat(Directory directory) async {
   int size = 0;
   final List<DirectoryStat> subDirectories = [];
   final Map<String, int> fileNameToSize = {};
@@ -92,10 +89,6 @@ Future<DirectoryStat> getDirectoryStat(
   if (await directory.exists()) {
     final List<FileSystemEntity> entities = directory.listSync();
     for (FileSystemEntity entity in entities) {
-      if (prefix != null && !entity.path.contains(prefix)) {
-        continue;
-      }
-
       if (entity is File) {
         final int fileSize = await File(entity.path).length();
         size += fileSize;

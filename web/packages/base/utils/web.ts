@@ -3,12 +3,11 @@
  * folder by appending a temporary <a> element to the DOM.
  *
  * @param url The URL that we want to download. See also
- * {@link downloadAndRevokeObjectURL} and {@link downloadString}. The URL is
- * revoked after initiating the download.
+ * {@link downloadAndRevokeObjectURL} and {@link downloadString}.
  *
  * @param fileName The name of downloaded file.
  */
-export const downloadAndRevokeObjectURL = (url: string, fileName: string) => {
+export const downloadURL = (url: string, fileName: string) => {
     const a = document.createElement("a");
     a.style.display = "none";
     a.href = url;
@@ -17,6 +16,15 @@ export const downloadAndRevokeObjectURL = (url: string, fileName: string) => {
     a.click();
     URL.revokeObjectURL(url);
     a.remove();
+};
+
+/**
+ * A variant of {@link downloadURL} that also revokes the provided
+ * {@link objectURL} after initiating the download.
+ */
+export const downloadAndRevokeObjectURL = (url: string, fileName: string) => {
+    downloadURL(url, fileName);
+    URL.revokeObjectURL(url);
 };
 
 /**

@@ -371,7 +371,7 @@
   "deleteFromBoth": "Supprimer des deux",
   "newAlbum": "Nouvel album",
   "albums": "Albums",
-  "memoryCount": "{count, plural, =0{aucun souvenir} one{{formattedCount} souvenir} other{{formattedCount} souvenirs}}",
+  "memoryCount": "{count, plural, one{{formattedCount} souvenir} other{{formattedCount} souvenirs}}",
   "@memoryCount": {
     "description": "The text to display the number of memories",
     "type": "text",
@@ -475,7 +475,7 @@
       }
     }
   },
-  "showMemories": "Afficher les souvenirs",
+  "showMemories": "Montrer les souvenirs",
   "yearsAgo": "{count, plural, one{il y a {count} an} other{il y a {count} ans}}",
   "backupSettings": "Paramètres de la sauvegarde",
   "backupStatus": "État de la sauvegarde",
@@ -792,6 +792,14 @@
   "share": "Partager",
   "unhideToAlbum": "Afficher dans l'album",
   "restoreToAlbum": "Restaurer vers l'album",
+  "moveItem": "{count, plural, one {Déplacez l'objet} other {Déplacez des objets}}",
+  "@moveItem": {
+    "description": "Page title while moving one or more items to an album"
+  },
+  "addItem": "{count, plural, one {Ajoutez un objet} other {Ajoutez des objets}}",
+  "@addItem": {
+    "description": "Page title while adding one or more items to album"
+  },
   "createOrSelectAlbum": "Créez ou sélectionnez un album",
   "selectAlbum": "Sélectionner album",
   "searchByAlbumNameHint": "Nom de l'album",
@@ -889,6 +897,7 @@
   "authToViewYourMemories": "Authentifiez-vous pour voir vos souvenirs",
   "unlock": "Déverrouiller",
   "freeUpSpace": "Libérer de l'espace",
+  "freeUpSpaceSaving": "{count, plural, one {Il peut être supprimé de l'appareil pour libérer {formattedSize}} other {Ils peuvent être supprimés de l'appareil pour libérer {formattedSize}}}",
   "filesBackedUpInAlbum": "{count, plural, one {1 fichier dans cet album a été sauvegardé en toute sécurité} other {{formattedNumber} fichiers dans cet album ont été sauvegardés en toute sécurité}}",
   "@filesBackedUpInAlbum": {
     "description": "Text to tell user how many files have been backed up in the album",
@@ -916,6 +925,18 @@
         "content": "{formattedNumber}",
         "example": "1,000",
         "type": "String"
+      }
+    }
+  },
+  "@freeUpSpaceSaving": {
+    "description": "Text to tell user how much space they can free up by deleting items from the device"
+  },
+  "freeUpAccessPostDelete": "Vous pouvez toujours {count, plural, one {y} other {y}} accéder sur Ente tant que vous avez un abonnement actif",
+  "@freeUpAccessPostDelete": {
+    "placeholders": {
+      "count": {
+        "example": "1",
+        "type": "int"
       }
     }
   },
@@ -1008,6 +1029,7 @@
   "didYouKnow": "Le savais-tu ?",
   "loadingMessage": "Chargement de vos photos...",
   "loadMessage1": "Vous pouvez partager votre abonnement avec votre famille",
+  "loadMessage2": "Nous avons conservé plus de 30 millions de souvenirs jusqu'à présent",
   "loadMessage3": "Nous conservons 3 copies de vos données, l'une dans un abri anti-atomique",
   "loadMessage4": "Toutes nos applications sont open source",
   "loadMessage5": "Notre code source et notre cryptographie ont été audités en externe",
@@ -1245,6 +1267,8 @@
     "description": "Subtitle to indicate that the user can find people quickly by name"
   },
   "findPeopleByName": "Trouver des personnes rapidement par leur nom",
+  "addViewers": "{count, plural, zero {Ajouter un observateur} one {Ajouter un observateur} other {Ajouter des observateurs}}",
+  "addCollaborators": "{count, plural, zero {Ajouter un collaborateur} one {Ajouter un collaborateur} other {Ajouter des collaborateurs}}",
   "longPressAnEmailToVerifyEndToEndEncryption": "Appuyez longuement sur un email pour vérifier le chiffrement de bout en bout.",
   "developerSettingsWarning": "Êtes-vous sûr de vouloir modifier les paramètres du développeur ?",
   "developerSettings": "Paramètres du développeur",
@@ -1256,7 +1280,6 @@
   "createCollaborativeLink": "Créer un lien collaboratif",
   "search": "Rechercher",
   "enterPersonName": "Entrez le nom d'une personne",
-  "viewPersonToUnlink": "Voir {name} pour délier",
   "enterName": "Saisir un nom",
   "savePerson": "Enregistrer la personne",
   "editPerson": "Modifier la personne",
@@ -1377,6 +1400,16 @@
   "enableMachineLearningBanner": "Activer l'apprentissage automatique pour la reconnaissance des visages et la recherche magique",
   "searchDiscoverEmptySection": "Les images seront affichées ici une fois le traitement terminé",
   "searchPersonsEmptySection": "Les personnes seront affichées ici une fois le traitement terminé",
+  "viewersSuccessfullyAdded": "{count, plural, =0 {0 observateur ajouté} =1 {1 observateur ajouté} other {{count} observateurs ajoutés}}",
+  "@viewersSuccessfullyAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    },
+    "description": "Number of viewers that were successfully added to an album."
+  },
   "collaboratorsSuccessfullyAdded": "{count, plural, =0 {0 collaborateur ajouté} =1 {1 collaborateur ajouté} other {{count} collaborateurs ajoutés}}",
   "@collaboratorsSuccessfullyAdded": {
     "placeholders": {
@@ -1452,6 +1485,15 @@
   },
   "currentlyRunning": "en cours d'exécution",
   "ignored": "ignoré",
+  "photosCount": "{count, plural, =0 {0 photo} =1 {1 photo} other {{count} photos}}",
+  "@photosCount": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "file": "Fichier",
   "searchSectionsLengthMismatch": "Incompatibilité de longueur des sections : {snapshotLength} != {searchLength}",
   "@searchSectionsLengthMismatch": {
@@ -1617,6 +1659,7 @@
   "@linkPersonCaption": {
     "description": "Caption for the 'Link person' title. It should be a continuation of the 'Link person' title. Just like how 'Link person' + 'for better sharing experience' forms a proper sentence in English, the combination of these two strings should also be a proper sentence in other languages."
   },
+  "videoStreaming": "Streaming vidéo",
   "processingVideos": "Traitement des vidéos",
   "streamDetails": "Détails du stream",
   "processing": "Traitement en cours",
@@ -1654,7 +1697,7 @@
   "selectedItemsWillBeRemovedFromThisPerson": "Les éléments sélectionnés seront retirés de cette personne, mais pas supprimés de votre bibliothèque.",
   "throughTheYears": "{dateFormat} au fil des années",
   "thisWeekThroughTheYears": "Cette semaine au fil des années",
-  "thisWeekXYearsAgo": "{count, plural, =1 {Cette semaine, {count} il y a l'année} other {Cette semaine, {count} il y a des années}}",
+  "thisWeekXYearsAgo": "{count, plural, one {}=1 {Cette semaine, {count} il y a l'année} other {Cette semaine, {count} il y a des années}}",
   "youAndThem": "Vous et {name}",
   "admiringThem": "Admirant {name}",
   "embracingThem": "Embrasse {name}",
@@ -1692,6 +1735,5 @@
   "cLFamilyPlan": "Limites pour le forfait Famille",
   "cLFamilyPlanDesc": "Vous pouvez maintenant fixer des limites sur la quantité de stockage que les membres de votre famille peuvent utiliser.",
   "cLBulkEdit": "Dates de modification multiples",
-  "cLBulkEditDesc": "Vous pouvez maintenant sélectionner plusieurs photos et modifier la date/heure pour toutes celles-ci, en une seule action rapide. Les dates de décalage sont également prises en charge.",
-  "curatedMemories": "Souvenirs conservés"
+  "cLBulkEditDesc": "Vous pouvez maintenant sélectionner plusieurs photos et modifier la date/heure pour toutes celles-ci, en une seule action rapide. Les dates de décalage sont également prises en charge."
 }

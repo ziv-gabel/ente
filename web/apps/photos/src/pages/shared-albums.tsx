@@ -73,7 +73,7 @@ import {
     savePublicCollectionPassword,
     syncPublicFiles,
 } from "services/publicCollectionService";
-import { uploadManager } from "services/upload-manager";
+import uploadManager from "services/upload/uploadManager";
 import {
     SelectedState,
     SetFilesDownloadProgressAttributes,
@@ -467,7 +467,7 @@ export default function PublicCollectionGallery() {
     } else if (!publicFiles || !credentials.current) {
         return (
             <Stack100vhCenter>
-                <Typography>{t("not_found")}</Typography>
+                <Typography>{t("NOT_FOUND")}</Typography>
             </Stack100vhCenter>
         );
     }

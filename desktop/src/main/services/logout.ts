@@ -1,6 +1,6 @@
 import type { FSWatcher } from "chokidar";
 import log from "../log";
-import { clearPendingVideoResults } from "../stream";
+import { clearConvertToMP4Results } from "../stream";
 import { clearStores } from "./store";
 import { watchReset } from "./watch";
 import { clearOpenZipCache } from "./zip";
@@ -22,9 +22,9 @@ export const logout = (watcher: FSWatcher) => {
         ignoreError("FS watch", e);
     }
     try {
-        clearPendingVideoResults();
+        clearConvertToMP4Results();
     } catch (e) {
-        ignoreError("video", e);
+        ignoreError("convert-to-mp4", e);
     }
     try {
         clearStores();

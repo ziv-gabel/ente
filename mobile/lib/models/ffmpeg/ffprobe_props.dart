@@ -82,8 +82,6 @@ class FFProbeProps {
     return width! / height!;
   }
 
-  int? get rotation => _rotation;
-
   // toString() method
   @override
   String toString() {

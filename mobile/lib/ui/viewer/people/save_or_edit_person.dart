@@ -628,7 +628,10 @@ class _SaveOrEditPersonState extends State<SaveOrEditPerson> {
       _logger.severe(
         "Failed to addNewPerson, email is already assigned to a person",
       );
-      await showAlreadyLinkedEmailDialog(context, email);
+      await showGenericErrorDialog(
+        context: context,
+        error: "Email already assigned",
+      );
       return null;
     }
 
@@ -682,8 +685,7 @@ class _SaveOrEditPersonState extends State<SaveOrEditPerson> {
           _email!.isNotEmpty &&
           _email != person!.data.email &&
           await checkIfEmailAlreadyAssignedToAPerson(_email!)) {
-        await showAlreadyLinkedEmailDialog(context, _email!);
-        return null;
+        throw Exception("Email already assigned to a person");
       }
       final String name = _inputName.trim();
       final String? birthDate = _selectedDate;
@@ -909,9 +911,13 @@ class _EmailSectionState extends State<_EmailSection> {
                           "Error getting isMeAssigned",
                           snapshot.error,
                         );
-                        return const EnteLoadingWidget();
+                        return const RepaintBoundary(
+                          child: EnteLoadingWidget(),
+                        );
                       } else {
-                        return const EnteLoadingWidget();
+                        return const RepaintBoundary(
+                          child: EnteLoadingWidget(),
+                        );
                       }
                     },
                   ),

@@ -5,7 +5,7 @@ import path from "node:path";
 import type { ZipItem } from "../../types/ipc";
 import log from "../log";
 import { markClosableZip, openZip } from "../services/zip";
-import { writeStream } from "./stream";
+import { ensure } from "./common";
 
 /**
  * Our very own directory within the system temp directory. Go crazy, but
@@ -20,21 +20,17 @@ const enteTempDirPath = async () => {
 /** Generate a random string suitable for being used as a file name prefix */
 const randomPrefix = () => {
     const ch = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    const randomChar = () => ch[Math.floor(Math.random() * ch.length)]!;
+    const randomChar = () => ensure(ch[Math.floor(Math.random() * ch.length)]);
 
     return Array(10).fill("").map(randomChar).join("");
 };
 
 /**
- * Return the path to a temporary file with an optional {@link extension}.
+ * Return the path to a temporary file with the given {@link suffix}.
  *
  * The function returns the path to a file in the system temp directory (in an
  * Ente specific folder therin) with a random prefix and an (optional)
- * {@link extension}. The parent directory is guaranteed to exist.
- *
- * @param extension A string, if provided, is used as the extension for the
- * generated path. It will be automatically prefixed by a dot, so don't include
- * the dot in the provided string.
+ * {@link extension}.
  *
  * It ensures that there is no existing item with the same name already.
  *
@@ -80,8 +76,8 @@ export const deleteTempFileIgnoringErrors = async (tempFilePath: string) => {
     }
 };
 
-/** The result of {@link makeFileForStreamOrPathOrZipItem}. */
-interface FileForStreamOrPathOrZipItem {
+/** The result of {@link makeFileForDataOrPathOrZipItem}. */
+interface FileForDataOrPathOrZipItem {
     /**
      * The path to the file (possibly temporary).
      */
@@ -105,32 +101,33 @@ interface FileForStreamOrPathOrZipItem {
 /**
  * Return the path to a file, a boolean indicating if this is a temporary path
  * that needs to be deleted after processing, and a function to write the given
- * {@link item} into that temporary file if needed.
+ * {@link dataOrPathOrZipItem} into that temporary file if needed.
  *
- * @param item A {@link ReadableStream} with the contents of the file, or the
- * path to an existing file, or a (path to a zip file, name of an entry within
- * that zip file) tuple.
+ * @param dataOrPathOrZipItem The contents of the file, or the path to an
+ * existing file, or a (path to a zip file, name of an entry within that zip
+ * file) tuple.
  */
-export const makeFileForStreamOrPathOrZipItem = async (
-    item: ReadableStream | string | ZipItem,
-): Promise<FileForStreamOrPathOrZipItem> => {
+export const makeFileForDataOrPathOrZipItem = async (
+    dataOrPathOrZipItem: Uint8Array | string | ZipItem,
+): Promise<FileForDataOrPathOrZipItem> => {
     let path: string;
     let isFileTemporary: boolean;
     let writeToTemporaryFile = async () => {
         /* no-op */
     };
 
-    if (typeof item == "string") {
-        path = item;
+    if (typeof dataOrPathOrZipItem == "string") {
+        path = dataOrPathOrZipItem;
         isFileTemporary = false;
     } else {
         path = await makeTempFilePath();
         isFileTemporary = true;
-        if (item instanceof ReadableStream) {
-            writeToTemporaryFile = () => writeStream(path, item);
+        if (dataOrPathOrZipItem instanceof Uint8Array) {
+            writeToTemporaryFile = () =>
+                fs.writeFile(path, dataOrPathOrZipItem);
         } else {
             writeToTemporaryFile = async () => {
-                const [zipPath, entryName] = item;
+                const [zipPath, entryName] = dataOrPathOrZipItem;
                 const zip = openZip(zipPath);
                 try {
                     await zip.extract(entryName, path);

@@ -4,12 +4,13 @@ import { downloadManager } from "ente-gallery/services/download";
 import { extractRawExif, parseExif } from "ente-gallery/services/exif";
 import {
     hlsPlaylistDataForFile,
-    type HLSPlaylistDataForFile,
+    type HLSPlaylistData,
 } from "ente-gallery/services/video";
 import type { EnteFile } from "ente-media/file";
-import { fileCaption, filePublicMagicMetadata } from "ente-media/file-metadata";
+import { fileCaption } from "ente-media/file-metadata";
 import { FileType } from "ente-media/file-type";
 import { ensureString } from "ente-utils/ensure";
+import { shouldUsePlayerV2 } from "./photoswipe";
 
 /**
  * This is a subset of the fields expected by PhotoSwipe itself (see the
@@ -144,11 +145,6 @@ export type ItemData = PhotoSwipeSlideData & {
      * original file could not be fetched because of an network error).
      */
     fetchFailed?: boolean;
-    /**
-     * This will be `true` if the item data for this particular file is
-     * considered transient, and should not be cached.
-     */
-    isTransient?: boolean;
 };
 
 /**
@@ -255,7 +251,7 @@ export const fileViewerDidClose = () => {
         resetState();
     } else {
         // Selectively clear.
-        forgetFailedOrTransientItems();
+        forgetFailedItems();
         forgetExif();
     }
 };
@@ -361,40 +357,13 @@ export const forgetItemDataForFileID = (fileID: number) => {
 };
 
 /**
- * Forget item data for the given {@link file} if its fetch had failed, or if it
- * is caching something that is transient in nature.
+ * Forget item data for the given {@link file} if its fetch had failed.
  *
- * It is called when the user moves away from a slide. In particular, this way
- * we can reset failures, if any, for a slide so that the fetch is tried again
- * when we come back to it.
- *
- * [Note: File viewer preloading and contentDeactivate]
- *
- * Note that because of preloading, this will only have a user visible effect if
- * the user moves out of the preload range. Let's take an example:
- *
- * - User opens slide at index `i`. Then the adjacent slides, `i - 1` and `i +
- *   1`, also get preloaded.
- *
- * - User moves away from `i` (in either direction, but let us take the example
- *   if they move `i - 1`).
- *
- * - This function will get called for `i` and will clear any failed or
- *   transient state.
- *
- * - But since PhotoSwipe already has the slides ready for `i`, if the user then
- *   moves back to `i` then PhotoSwipe will not attempt to recreate the slide
- *   and so will not even try to get "itemData". So this will only have an
- *   effect if they move out of preload range (e.g. `i - 1`, `i - 2`), and then
- *   back (`i - 1`, `i`).
- *
- * See: [Note: File viewer error handling]
- *
- * See: [Note: Caching HLS playlist data]
+ * This is called when the user moves away from a slide so that we attempt a
+ * full retry when they come back the next time.
  */
-export const forgetItemDataForFileIDIfNeeded = (fileID: number) => {
-    const itemData = _state.itemDataByFileID.get(fileID);
-    if (itemData?.fetchFailed || itemData?.isTransient)
+export const forgetFailedItemDataForFileID = (fileID: number) => {
+    if (_state.itemDataByFileID.get(fileID)?.fetchFailed)
         forgetItemDataForFileID(fileID);
 };
 
@@ -412,17 +381,13 @@ export const updateItemDataAlt = (updatedFile: EnteFile) => {
 };
 
 /**
- * Forget item data for the all files whose fetch had failed, or if the
- * corresponding item data is transient and shouldn't be cached.
+ * Forget item data for the all files whose fetch had failed.
  *
- * This is called when the user closes the file viewer; in particular, this way
- * we attempt a full retry for previously failed files when the user reopens the
- * viewer the next time.
+ * This is called when the user closes the file viewer so that we attempt a full
+ * retry when they reopen the viewer the next time.
  */
-const forgetFailedOrTransientItems = () =>
-    [..._state.itemDataByFileID.keys()].forEach(
-        forgetItemDataForFileIDIfNeeded,
-    );
+const forgetFailedItems = () =>
+    [..._state.itemDataByFileID.keys()].forEach(forgetFailedItemDataForFileID);
 
 const enqueueUpdates = async (
     file: EnteFile,
@@ -452,14 +417,10 @@ const enqueueUpdates = async (
 
     const updateVideo = (
         videoURL: string | undefined,
-        hlsPlaylistData: HLSPlaylistDataForFile,
+        hlsPlaylistData: HLSPlaylistData | undefined,
     ) => {
         const videoURLD = videoURL ? { videoURL } : {};
-        // See: [Note: Caching HLS playlist data]
-        //
-        // In brief, there are three cases:
-        if (typeof hlsPlaylistData == "object") {
-            // 1. If we have a playlist, we can cache it
+        if (hlsPlaylistData) {
             const {
                 playlistURL: videoPlaylistURL,
                 width,
@@ -470,9 +431,7 @@ const enqueueUpdates = async (
                 createHLSPlaylistItemDataValidity(),
             );
         } else {
-            // 2. if the file is not eligible ("skip"), we can cache it.
-            // 3. Otherwise it's transient and shouldn't be cached indefinitely.
-            update({ ...videoURLD, isTransient: hlsPlaylistData != "skip" });
+            update(videoURLD);
         }
     };
 
@@ -493,16 +452,8 @@ const enqueueUpdates = async (
         const thumbnailData = await withDimensionsIfPossible(
             ensureString(thumbnailURL),
         );
-
-        // If the aspect ratio of the original file matches the aspect ratio of
-        // the thumbnail, then render the thumbnail using the original's
-        // dimensions for a better visual experience.
-        const { width, height } = thumbnailDimensions(thumbnailData, file);
-
         update({
             ...thumbnailData,
-            width,
-            height,
             isContentLoading: true,
             isContentZoomable: false,
         });
@@ -521,18 +472,13 @@ const enqueueUpdates = async (
     }
 
     try {
-        let hlsPlaylistData: HLSPlaylistDataForFile;
-        if (file.metadata.fileType == FileType.video) {
-            hlsPlaylistData = await hlsPlaylistDataForFile(
-                file,
-                downloadManager.publicAlbumsCredentials,
-            );
+        // TODO(HLS):
+        let hlsPlaylistData: HLSPlaylistData | undefined;
+        if (shouldUsePlayerV2() && file.metadata.fileType == FileType.video) {
+            hlsPlaylistData = await hlsPlaylistDataForFile(file);
             // We have a HLS playlist, and the user didn't request the original.
             // Early return so that we don't initiate a fetch for the original.
-            if (
-                typeof hlsPlaylistData == "object" &&
-                opts?.videoQuality != "original"
-            ) {
+            if (hlsPlaylistData && opts?.videoQuality != "original") {
                 updateVideo(undefined, hlsPlaylistData);
                 return;
             }
@@ -630,29 +576,6 @@ const withDimensionsIfPossible = (
         image.src = imageURL;
     });
 
-/**
- * Return the dimensions to use for the thumbnail associated with {@link file}.
- *
- * If the aspect ratio of the thumbnail is (approximately) equal to that of the
- * dimensions we have on record for the original image (obtained from the file
- * metadata), then use the dimensions of the original image in lieu of the
- * thumbnail dimensions for a more graceful transition during image loads.
- */
-const thumbnailDimensions = (
-    { width: thumbnailWidth, height: thumbnailHeight }: Partial<ItemData>,
-    file: EnteFile,
-) => {
-    const { w: imageWidth, h: imageHeight } =
-        filePublicMagicMetadata(file) ?? {};
-    if (thumbnailWidth && thumbnailHeight && imageWidth && imageHeight) {
-        const arThumb = thumbnailWidth / thumbnailHeight;
-        const arImage = imageWidth / imageHeight;
-        if (Math.abs(arThumb - arImage) < 0.1) {
-            return { width: imageWidth, height: imageHeight };
-        }
-    }
-    return { width: thumbnailWidth, height: thumbnailHeight };
-};
 /**
  * Return a new validity for a HLS playlist containing presigned URLs.
  *
