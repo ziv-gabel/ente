@@ -371,7 +371,7 @@
   "deleteFromBoth": "Aus beidem löschen",
   "newAlbum": "Neues Album",
   "albums": "Alben",
-  "memoryCount": "{count, plural, zero{keine Erinnerungsstücke} one{{formattedCount} Erinnerung} other{{formattedCount} Erinnerungsstücke}}",
+  "memoryCount": "{count, plural, =0{keine Erinnerungen} one{{formattedCount} Erinnerung} other{{formattedCount} Erinnerungen}}",
   "@memoryCount": {
     "description": "The text to display the number of memories",
     "type": "text",
@@ -721,6 +721,7 @@
     "type": "text"
   },
   "backupFailed": "Sicherung fehlgeschlagen",
+  "sorryBackupFailedDesc": "Leider konnten wir diese Datei momentan nicht sichern, wir werden es später erneut versuchen.",
   "couldNotBackUpTryLater": "Deine Daten konnten nicht gesichert werden.\nWir versuchen es später erneut.",
   "enteCanEncryptAndPreserveFilesOnlyIfYouGrant": "Ente kann Dateien nur verschlüsseln und sichern, wenn du den Zugriff darauf gewährst",
   "pleaseGrantPermissions": "Bitte erteile die nötigen Berechtigungen",
@@ -792,11 +793,11 @@
   "share": "Teilen",
   "unhideToAlbum": "Im Album anzeigen",
   "restoreToAlbum": "Album wiederherstellen",
-  "moveItem": "{count, plural, one{Element verschieben} other{Elemente verschieben}}",
+  "moveItem": "{count, plural, =1 {Element verschieben} other{Elemente verschieben}}",
   "@moveItem": {
     "description": "Page title while moving one or more items to an album"
   },
-  "addItem": "{count, plural, one {Element hinzufügen} other {Elemente hinzufügen}}",
+  "addItem": "{count, plural, =1 {Element hinzufügen} other {Elemente hinzufügen}}",
   "@addItem": {
     "description": "Page title while adding one or more items to album"
   },
@@ -897,7 +898,7 @@
   "authToViewYourMemories": "Bitte authentifizieren, um deine Erinnerungsstücke anzusehen",
   "unlock": "Jetzt freischalten",
   "freeUpSpace": "Speicherplatz freigeben",
-  "freeUpSpaceSaving": "{count, plural, one {Es kann vom Gerät gelöscht werden, um {formattedSize} freizugeben} other {Sie können vom Gerät gelöscht werden, um {formattedSize} freizugeben}}",
+  "freeUpSpaceSaving": "{count, plural, =1 {Es kann vom Gerät gelöscht werden, um {formattedSize} freizugeben} other {Sie können vom Gerät gelöscht werden, um {formattedSize} freizugeben}}",
   "filesBackedUpInAlbum": "{count, plural, one {1 Datei} other {{formattedNumber} Dateien}} in diesem Album wurde(n) sicher gespeichert",
   "@filesBackedUpInAlbum": {
     "description": "Text to tell user how many files have been backed up in the album",
@@ -931,7 +932,7 @@
   "@freeUpSpaceSaving": {
     "description": "Text to tell user how much space they can free up by deleting items from the device"
   },
-  "freeUpAccessPostDelete": "Du kannst immernoch über Ente {count, plural, one {darauf} other {auf sie}} zugreifen, solange du ein aktives Abo hast",
+  "freeUpAccessPostDelete": "Du hast {count, plural, =1 {darauf} other {auf sie}} weiterhin Zugriff, solange du ein aktives Abo hast",
   "@freeUpAccessPostDelete": {
     "placeholders": {
       "count": {
@@ -1029,7 +1030,7 @@
   "didYouKnow": "Schon gewusst?",
   "loadingMessage": "Fotos werden geladen...",
   "loadMessage1": "Du kannst dein Abonnement mit deiner Familie teilen",
-  "loadMessage2": "Wir haben bereits mehr als 30 Millionen Erinnerungsstücke gesichert",
+  "loadMessage2": "Wir haben bereits über 200 Millionen Erinnerungen bewahrt",
   "loadMessage3": "Wir behalten 3 Kopien Ihrer Daten, eine in einem unterirdischen Schutzbunker",
   "loadMessage4": "Alle unsere Apps sind Open-Source",
   "loadMessage5": "Unser Quellcode und unsere Kryptografie wurden extern geprüft",
@@ -1267,8 +1268,8 @@
     "description": "Subtitle to indicate that the user can find people quickly by name"
   },
   "findPeopleByName": "Finde Personen schnell nach Namen",
-  "addViewers": "{count, plural, one {Betrachter} other {Betrachter}} hinzufügen",
-  "addCollaborators": "{count, plural, one {Teilnehmer} other {Teilnehmer}} hinzufügen",
+  "addViewers": "{count, plural, =0 {Betrachter hinzufügen} =1 {Betrachter hinzufügen} other {Betrachter hinzufügen}}",
+  "addCollaborators": "{count, plural, =0 {Bearbeiter hinzufügen} =1 {Bearbeiter hinzufügen} other {Bearbeiter hinzufügen}}",
   "longPressAnEmailToVerifyEndToEndEncryption": "Lange auf eine E-Mail drücken, um die Ende-zu-Ende-Verschlüsselung zu überprüfen.",
   "developerSettingsWarning": "Bist du sicher, dass du Entwicklereinstellungen bearbeiten willst?",
   "developerSettings": "Entwicklereinstellungen",
@@ -1280,6 +1281,8 @@
   "createCollaborativeLink": "Gemeinschaftlichen Link erstellen",
   "search": "Suche",
   "enterPersonName": "Namen der Person eingeben",
+  "editEmailAlreadyLinked": "Diese E-Mail ist bereits verknüpft mit {name}.",
+  "viewPersonToUnlink": "{name} zum Entfernen des Links anzeigen",
   "enterName": "Name eingeben",
   "savePerson": "Person speichern",
   "editPerson": "Person bearbeiten",
@@ -1400,7 +1403,7 @@
   "enableMachineLearningBanner": "Aktiviere maschinelles Lernen für die magische Suche und Gesichtserkennung",
   "searchDiscoverEmptySection": "Bilder werden hier angezeigt, sobald Verarbeitung und Synchronisation abgeschlossen sind",
   "searchPersonsEmptySection": "Personen werden hier angezeigt, sobald Verarbeitung und Synchronisierung abgeschlossen sind",
-  "viewersSuccessfullyAdded": "{count, plural, =0 {0 Betrachter hinzugefügt} =1 {1 Betrachter hinzugefügt} other {{count} Betrachter hinzugefügt}}",
+  "viewersSuccessfullyAdded": "{count, plural, =0 {0 Betrachter hinzugefügt} =1 {Einen Betrachter hinzugefügt} other {{count} Betrachter hinzugefügt}}",
   "@viewersSuccessfullyAdded": {
     "placeholders": {
       "count": {
@@ -1410,7 +1413,7 @@
     },
     "description": "Number of viewers that were successfully added to an album."
   },
-  "collaboratorsSuccessfullyAdded": "{count, plural, one {}=0 {0 Mitarbeiter hinzugefügt} =1 {1 Mitarbeiter hinzugefügt} other {{count} Mitarbeiter hinzugefügt}}",
+  "collaboratorsSuccessfullyAdded": "{count, plural, =0 {0 Mitarbeiter hinzugefügt} =1 {1 Mitarbeiter hinzugefügt} other {{count} Mitarbeiter hinzugefügt}}",
   "@collaboratorsSuccessfullyAdded": {
     "placeholders": {
       "count": {
@@ -1485,7 +1488,7 @@
   },
   "currentlyRunning": "läuft gerade",
   "ignored": "ignoriert",
-  "photosCount": "{count, plural, one {}=0 {0 Fotos} =1 {1 Foto} other {{count} Fotos}}",
+  "photosCount": "{count, plural, =0 {0 Fotos} =1 {Ein Foto} other {{count} Fotos}}",
   "@photosCount": {
     "placeholders": {
       "count": {
@@ -1659,7 +1662,6 @@
   "@linkPersonCaption": {
     "description": "Caption for the 'Link person' title. It should be a continuation of the 'Link person' title. Just like how 'Link person' + 'for better sharing experience' forms a proper sentence in English, the combination of these two strings should also be a proper sentence in other languages."
   },
-  "videoStreaming": "Video-Streaming",
   "processingVideos": "Verarbeite Videos",
   "streamDetails": "Stream-Details",
   "processing": "In Bearbeitung",
@@ -1735,5 +1737,6 @@
   "cLFamilyPlan": "Obergrenzen für den Familientarif",
   "cLFamilyPlanDesc": "Du kannst jetzt festlegen, wie viel Speicherplatz deine Familienmitglieder nutzen können.",
   "cLBulkEdit": "Massenbearbeitung von Datumsangaben",
-  "cLBulkEditDesc": "Du kannst jetzt mehrere Fotos auswählen, und das Datum/Uhrzeit für alle mit einer Aktion ändern. Das Verschieben von Daten wird auch unterstützt."
+  "cLBulkEditDesc": "Du kannst jetzt mehrere Fotos auswählen, und das Datum/Uhrzeit für alle mit einer Aktion ändern. Das Verschieben von Daten wird auch unterstützt.",
+  "curatedMemories": "Ausgewählte Erinnerungen"
 }
